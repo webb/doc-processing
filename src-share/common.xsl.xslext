@@ -1,0 +1,287 @@
+<?xml version="1.0" encoding="UTF-8"?> <!-- -*-sgml-*- -->
+<stylesheet 
+   version="2.0"
+   xmlns:common="https://iead.ittl.gtri.org/wr24/document/functions/common/2011-10-05-1029"
+   xmlns:doc="https://iead.ittl.gtri.org/wr24/doc/2011-09-30-2258"
+   xmlns:f="http://ittl.gtri.org/wr24/2009-03-10-1439/xsl-functions"
+   xmlns:h="http://www.w3.org/1999/xhtml"
+   xmlns:xe="http://ittl.gtri.gatech.edu/wr24/2009-03-23-1736/xsl-extension"
+   xmlns:xs="http://www.w3.org/2001/XMLSchema"
+   xmlns="http://www.w3.org/1999/XSL/Transform">
+
+  <!--
+  <import-schema namespace="https://iead.ittl.gtri.org/wr24/doc/2011-09-30-2258"
+                 schema-location="doc.xsd" />
+  -->
+
+  <include href="../../lib/xsl/xsl-functions.xsl"/>
+
+  <template match="text()[string-length(normalize-space(.)) = 0]"/>
+
+  <!-- All titles should be invoked by their containers: figures, sections, etc.
+        We don't throw an error because we want sections, etc., to be able to use apply-templates without 
+        dodging the title every time. -->
+  <template match="doc:title"/>
+
+  <!-- comments do not show up in results, but a message is written -->
+  <template match="doc:comment">
+    <!-- print message on comment -->
+    <message><value-of select="f:get-location(.)"/>:comment</message>
+  </template>
+
+  <!-- comments get eaten -->
+  <template match="comment()"/>
+
+  <template match="node()" priority="-1">
+    <xe:assert test="false()" context=".">Unexpected content (no mode). Item was <value-of select="f:get-item-description(.)"/>.</xe:assert>
+  </template>
+
+  <xe:mode mode="text">
+
+    <template match="node()" priority="-1" mode="text">
+      <xe:assert test="false()" context=".">Unexpected content (mode=text). Item was <value-of select="f:get-item-description(.)"/>.</xe:assert>
+    </template>
+
+    <template match="doc:ref" mode="text">
+      <variable name="resolved" select="//doc:*[@id = current()/@idref]" as="element()"/>
+    
+      <apply-templates select="$resolved" mode="get-reference">
+        <with-param name="source" select="."/>
+      </apply-templates>
+    </template>
+
+    <template match="doc:include-text" mode="text">
+      <value-of select="unparsed-text(resolve-uri(@href, base-uri(.)))"/>
+    </template>
+  
+    <template match="doc:xmlBlurb" mode="text">
+      <value-of select="unparsed-text(resolve-uri(concat('xmlBlurb/', @id, '.txt'), base-uri(.)))"/>
+    </template>
+
+    <template match="doc:textBlurb" mode="text">
+      <value-of select="."/>
+    </template>
+  
+    <template match="text()" mode="text">
+      <param name="text-is-preformatted" as="xs:boolean" select="false()" tunnel="yes"/>
+      <choose>
+        <when test="$text-is-preformatted = false()">
+          <variable name="string" as="xs:string" select="."/>
+          <variable name="bounded" as="xs:string" select="concat('X', $string, 'X')"/>
+          <variable name="normalized" as="xs:string" select="normalize-space($bounded)"/>
+          <variable name="stripped" as="xs:string" select="substring($normalized, 2, string-length($normalized)-2)"/>
+          <value-of select="$stripped"/>
+        </when>
+        <otherwise>
+          <xe:assert test="$text-is-preformatted = true()" context=".">text-is-preformatted must be true</xe:assert>
+          <value-of select="."/>
+        </otherwise>
+      </choose>
+    </template>
+
+    <!-- todos do not show up in results, but a message is written -->
+    <template match="doc:todo" mode="text">
+      <!-- print message on todos -->
+      <message><value-of select="f:get-location(.)"/>:todo: <value-of select="normalize-space(.)"/></message>
+    </template>
+
+    <!-- issues surround text that does show up in results, and a message is written -->
+    <template match="doc:issue" mode="text">
+      <message>
+        <value-of select="f:get-location(.)"/>
+        <text> issue: </text>
+        <value-of select="@note"/>
+        <if test="exists(@bug)"> (<value-of select="@bug"/>)</if>
+      </message>
+      <apply-templates mode="text"/>
+    </template>
+
+  </xe:mode>
+
+  <xe:mode mode="get-label">
+
+    <template match="doc:figure" mode="get-label">
+      <text>Figure </text>
+      <value-of select="common:item-get-number(.)"/>
+    </template>
+
+    <template match="doc:reference" mode="get-label">
+      <xe:assert test="exists(@id)" context=".">A doc:reference must have @id.</xe:assert>
+
+      <text>[</text>
+      <choose>
+        <when test="exists(@label)">
+          <value-of select="@label"/>
+        </when>
+        <otherwise>
+          <value-of select="@id"/>
+        </otherwise>
+      </choose>
+      <text>]</text>
+    </template>
+
+    <template match="doc:section" mode="get-label">
+      <if test="common:section-is-appendix(.)">
+        <text>Appendix </text>
+      </if>
+      <value-of select="common:section-get-number(.)"/>
+    </template>
+
+    <template match="doc:ruleSection" mode="get-label">
+      <variable name="rule" as="element(doc:rule)" select="exactly-one(doc:rule)"/>
+      <apply-templates select="$rule" mode="get-label"/>
+    </template>
+
+    <template match="doc:rule" mode="get-label">
+      <text>Rule </text>
+      <variable name="top-section-number" select="common:get-top-section-number(.)"/>
+      <value-of select="$top-section-number"/>
+      <text>-</text>
+      <value-of select="count(preceding::doc:rule[ 
+                                $top-section-number = common:get-top-section-number(.)]) + 1"/>
+    </template>
+
+    <template match="doc:bogusRule" mode="get-label">
+      <text>Rule </text>
+      <value-of select="@section"/>
+      <text>-</text>
+      <value-of select="@number"/>
+    </template>
+
+    <template match="doc:definition|doc:bogusDefinition" mode="get-label">
+      <text>Definition: </text>
+      <value-of select="@term"/>
+    </template>
+
+    <template match="doc:principle" mode="get-label">
+      <text>Principle </text>
+      <value-of select="common:principle-get-number(.)"/>
+    </template>
+
+    <template match="doc:bogusPrinciple" mode="get-label">
+      <text>Principle </text>
+      <value-of select="@number"/>
+    </template>
+
+    <!-- "record of changes" doesn't have a title, so don't call this on that -->
+    <template match="doc:table[exists(doc:title)]" mode="get-label">
+      <text>Table </text>
+      <variable name="top-section-number" select="common:get-top-section-number(.)"/>
+      <value-of select="$top-section-number"/>
+      <text>-</text>
+      <value-of select="count(preceding::doc:table[
+                                exists(doc:title) 
+                                and $top-section-number = common:get-top-section-number(.)])
+                                + 1"/>
+    </template>
+
+    <template match="@*|node()" priority="-2" mode="get-label">
+      <xe:assert test="false()" context=".">Unexpected content (mode=get-label). Item was <value-of select="f:get-item-description(.)"/>.</xe:assert>
+    </template>
+
+  </xe:mode>
+
+  <xe:mode mode="get-title">
+
+    <template match="@*|node()" priority="-2" mode="get-title">
+      <xe:assert test="false()" context=".">Unexpected content (mode=get-title). Item was <value-of select="f:get-item-description(.)"/>.</xe:assert>
+    </template>
+
+    <template match="doc:figure|doc:section|doc:table | doc:ruleSection" priority="-1" mode="get-title">
+      <apply-templates select="doc:title/node()" mode="text"/>
+    </template>
+
+  </xe:mode>
+
+  <xe:mode mode="get-reference">
+
+    <template match="@*|node()" priority="-2" mode="get-reference">
+      <param name="source" as="element()?" select="()"/>
+      <xe:assert test="false()" context=".">Unexpected content (mode=get-reference). Item was <value-of select="f:get-item-description(.)"/>.</xe:assert>
+    </template>
+  
+  </xe:mode>
+
+  <function name="common:get-below-or-above" as="xs:string">
+    <param name="from" as="element()"/>
+    <param name="to" as="element()"/>
+    <value-of>
+      <choose>
+        <when test="$from &lt;&lt; $to">
+          <text>, below</text>
+        </when>
+        <otherwise>
+          <text>, above</text>
+        </otherwise>
+      </choose>
+      <variable name="next" as="node()?" select="$from/following-sibling::node()[1]"/>
+      <if test="exists($next) 
+                and $next/self::text() 
+                and starts-with(normalize-space(concat('X', $next)), 'X ')">
+        <text>,</text>
+      </if>
+    </value-of>
+  </function>
+
+  <function name="common:get-top-section" as="element(doc:section)">
+    <param name="context" as="node()"/>
+    <sequence select="$context/ancestor-or-self::doc:section[empty(ancestor::doc:section)]"/>
+  </function>
+
+  <function name="common:get-top-section-number" as="xs:string">
+    <param name="context" as="node()"/>
+    <value-of select="common:section-get-local-index(common:get-top-section($context))"/>
+  </function>
+
+  <function name="common:item-get-number" as="xs:string">
+    <param name="item" as="element()"/>
+    <xe:assert test="node-name($item) = ( xs:QName('doc:figure'), xs:QName('doc:rule'), xs:QName('doc:table') )" 
+               context="$item"
+      >common:item-get-number must be called on figure, rule, or table.</xe:assert>
+    <variable name="top-section" as="element(doc:section)" 
+              select="common:get-top-section($item)"/>
+    <value-of select="concat( common:section-get-local-index($top-section),
+                              '-',
+                              count($item/preceding::doc:*[
+                                local-name() = local-name($item)
+                                and $top-section = common:get-top-section(.)
+                              ]) + 1 )"/>
+  </function>
+
+  <function name="common:principle-get-number" as="xs:string">
+    <param name="principle" as="element(doc:principle)"/>
+    <value-of select="count($principle/preceding::doc:principle) + 1"/>
+  </function>
+
+  <function name="common:section-get-local-index" as="xs:string">
+    <param name="section" as="element(doc:section)"/>
+    <choose>
+      <when test="empty($section/parent::doc:section)
+                  and common:section-is-appendix($section)">
+        <value-of select="substring('ABCDEFGHIJKLMNOPQRSTUVWXYZ', 
+                          count($section/preceding-sibling::doc:section[common:section-is-appendix(.)]) + 1,
+                          1)"/>
+      </when>
+      <otherwise>
+        <value-of select="count($section/preceding-sibling::doc:section) + 1"/>
+      </otherwise>
+    </choose>
+  </function>
+
+  <function name="common:section-get-number" as="xs:string">
+    <param name="section" as="element(doc:section)"/>
+
+    <value-of select="string-join(
+                        (for $a-section in ($section/ancestor-or-self::doc:section)
+                         return common:section-get-local-index($a-section)),
+                        '.')"/>
+  </function>
+
+  <function name="common:section-is-appendix" as="xs:boolean">
+    <param name="section" as="element(doc:section)"/>
+    <sequence select="empty($section/ancestor::doc:section)
+                      and ($section/@isAppendix = 'true'
+                           or exists($section/preceding-sibling::doc:section[@isAppendix = 'true']))"/>
+  </function>
+
+</stylesheet>

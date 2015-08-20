@@ -1,0 +1,64 @@
+
+SRC_M4 := $(shell find src -type f -name '*.m4')
+SRC_XSLEXT := $(shell find src -type f -name '*.xslext')
+
+SRC_SHARE_M4 := $(shell find src-share -type f -name '*.m4')
+SRC_SHARE_XSLEXT := $(shell find src-share -type f -name '*.xslext')
+
+STATIC := $(shell find static -type f ! -name '*~')
+STATIC_SHARE := $(shell find static-share -type f ! -name '*~')
+
+BUILD_TARGETS := \
+	$(SRC_M4:src/%.m4=image/%) \
+	$(SRC_XSLEXT:src/%.xslext=image/%) \
+	$(SRC_SHARE_M4:src-share/%.m4=image/share/CONFIG_PACKAGE_NAME/%) \
+	$(SRC_SHARE_XSLEXT:src-share/%.xslext=image/share/CONFIG_PACKAGE_NAME/%) \
+	$(STATIC:static/%=image/%) \
+	$(STATIC_SHARE:static-share/%=image/share/CONFIG_PACKAGE_NAME/%)
+
+include package-helper.mk
+
+.PHONY: reinstall uninstall install default test distclean build clean
+
+default:
+	@echo "Pick a target:"
+	@echo "  uninstall"
+	@echo "  install"
+	@echo "  reinstall: uninstall and then install"
+	@echo "  test"
+	@echo "  clean: make it so that it can be rebuilt"
+	@echo "  distclean: make it so that it can be reconfigured"
+	@echo "  build: build images directory"
+
+reinstall:
+	$(MAKE) uninstall
+	$(MAKE) install
+
+install: build
+	$(call PACKAGE_HELPER_INSTALL,CONFIG_PACKAGES_DIR,CONFIG_PACKAGE_NAME)
+
+uninstall:
+	$(call PACKAGE_HELPER_UNINSTALL,CONFIG_PACKAGES_DIR,CONFIG_PACKAGE_NAME)
+
+distclean: clean
+	$(RM) CONFIG_PRODUCTS
+
+clean:
+	$(RM) -r image
+
+build: $(BUILD_TARGETS)
+
+image/%: src/%.m4 CONFIG_DECLS_M4
+	$(call PACKAGE_HELPER_PREPROCESS,$<,$@,CONFIG_DECLS_M4)
+
+image/share/CONFIG_PACKAGE_NAME/%: src-share/%.m4 CONFIG_DECLS_M4
+	$(call PACKAGE_HELPER_PREPROCESS,$<,$@,CONFIG_DECLS_M4)
+
+image/share/CONFIG_PACKAGE_NAME/%.xsl: src-share/%.xsl.xslext CONFIG_LIB_XSL_EXTENSION
+	CONFIG_SAXON -l:on --readonly -in $< -out $@ -xsl CONFIG_LIB_XSL_EXTENSION
+
+image/%: static/%
+	$(call PACKAGE_HELPER_COPY,$<,$@)
+
+image/share/CONFIG_PACKAGE_NAME/%: static-share/%
+	$(call PACKAGE_HELPER_COPY,$<,$@)

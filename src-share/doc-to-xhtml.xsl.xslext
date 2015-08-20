@@ -1,0 +1,877 @@
+<?xml version="1.0" encoding="UTF-8"?> <!-- -*-sgml-*- -->
+<stylesheet 
+   version="2.0"
+   xmlns:common="https://iead.ittl.gtri.org/wr24/document/functions/common/2011-10-05-1029"
+   xmlns:this="https://iead.ittl.gtri.org/wr24/document/functions/doc-to-xhtml/2013-08-12-1108"
+   xmlns:doc="https://iead.ittl.gtri.org/wr24/doc/2011-09-30-2258"
+   xmlns:f="http://ittl.gtri.org/wr24/2009-03-10-1439/xsl-functions"
+   xmlns:h="http://www.w3.org/1999/xhtml"
+   xmlns:xe="http://ittl.gtri.gatech.edu/wr24/2009-03-23-1736/xsl-extension"
+   xmlns:xs="http://www.w3.org/2001/XMLSchema"
+   xmlns="http://www.w3.org/1999/XSL/Transform">
+
+  <include href="common.xsl"/>
+
+  <output method="xml" version="1.0" indent="no"/>
+
+<!-- not using schema aware processing.
+  <import-schema namespace="https://iead.ittl.gtri.org/wr24/doc/2011-09-30-2258"
+                 schema-location="doc.xsd"/>
+-->
+
+  <template match="doc:document">
+    <h:html>
+      <h:head>
+        <h:title>
+          <value-of select="doc:title"/>, <value-of select="doc:version"/>
+        </h:title>
+        <h:style type="text/css" media="all">
+          <copy-of select="normalize-space(unparsed-text('doc.css'))"/>
+        </h:style>
+      </h:head>
+      <h:body>
+        <h:div class="title">
+          <apply-templates select="doc:title/node()" mode="text"/>
+        </h:div>
+        <h:div class="subtitle">
+          <text>Version </text>
+          <apply-templates select="doc:version/node()" mode="text"/>
+        </h:div>
+        <h:div class="subtitle">
+          <value-of select="format-date(doc:date, '[MNn] [D], [Y]', 'en', (), ())"/>
+        </h:div>
+        <h:div class="subtitle">
+          <apply-templates select="doc:author/node()" mode="text"/>
+        </h:div>
+        <apply-templates select="*[not(node-name(.) = ( 
+                                     xs:QName('doc:title'), 
+                                     xs:QName('doc:subtitle'),
+                                     xs:QName('doc:version'),
+                                     xs:QName('doc:date'),
+                                     xs:QName('doc:author'),
+                                     xs:QName('doc:blurbSet')))]"/>
+      </h:body>
+    </h:html>
+  </template>
+
+  <template match="doc:subsection">
+    <h:div class="section">
+      <h:div class="heading">
+        <h:a name="{this:get-id(.)}"/>
+        <apply-templates select="doc:title/node()" mode="text"/>
+      </h:div>
+      <apply-templates/>
+    </h:div>
+  </template>
+
+  <template match="doc:p">
+    <h:p>
+      <apply-templates mode="text"/>
+    </h:p>
+  </template>
+
+  <template match="doc:listOfSections">
+    <if test="exists(parent::*/doc:section)">
+      <h:ul>
+        <for-each select="parent::*/doc:section">
+          <h:li>
+            <apply-templates select="." mode="get-reference"/>
+          </h:li>
+        </for-each>
+      </h:ul>
+    </if>
+  </template>
+
+  <template match="doc:p-todo">
+    <h:p class="todo">
+      <apply-templates mode="text"/>
+    </h:p>
+    <message>
+      <value-of select="f:get-location(.)"/>
+      <text>:todo:</text>
+      <value-of>
+        <apply-templates mode="text"/>
+      </value-of>
+    </message>
+  </template>
+
+  <template match="doc:sub">
+    <h:div class="sub">
+      <apply-templates/>
+    </h:div>
+  </template>
+
+  <template match="doc:image[@src]">
+    <h:div class="img">
+      <h:img>
+        <attribute name="src">
+          <text>data:</text>
+          <choose>
+            <when test="ends-with(@src, '.png')">
+              <text>image/png</text>
+            </when>
+            <otherwise>
+              <xe:assert test="false()" context=".">Unexpected file type in doc:image/@src.</xe:assert>
+            </otherwise>
+          </choose>
+          <text>;base64,</text>
+          <value-of select="unparsed-text(resolve-uri(concat(@src, '.base64'), base-uri(.)))"/>
+        </attribute>
+        <variable name="width-uri" select="resolve-uri(concat(@src, '.width.txt'), base-uri(.))" as="xs:anyURI"/>
+        <if test="unparsed-text-available($width-uri)">
+          <variable name="width" select="normalize-space(unparsed-text($width-uri))"/>
+          <if test="string-length($width) &gt; 0">
+            <attribute name="style">
+              <text>max-width:</text>
+              <value-of select="$width"/>
+              <text>px</text>
+            </attribute>
+          </if>
+        </if>
+      </h:img>
+    </h:div>
+  </template>
+
+  <template match="doc:blockquote">
+    <h:blockquote>
+      <apply-templates/>
+    </h:blockquote>
+  </template>
+
+  <template match="doc:table">
+    <h:div class="table">
+      <if test="exists(doc:title)">
+        <h:div class="caption">
+          <h:a name="{this:get-id(.)}"/>
+          <apply-templates select="." mode="get-label"/>
+          <text>: </text>
+          <apply-templates select="." mode="get-title"/>
+        </h:div>
+      </if>
+      <h:table>
+        <apply-templates select="doc:theadr"/>
+        <h:tbody>
+          <apply-templates select="doc:tr"/>
+        </h:tbody>
+      </h:table>
+    </h:div>
+  </template>
+
+  <template match="doc:theadr">
+    <h:thead>
+      <h:tr>
+        <apply-templates/>
+      </h:tr>
+    </h:thead>
+  </template>
+
+  <template match="doc:th">
+    <h:th>
+      <apply-templates mode="text"/>
+    </h:th>
+  </template>
+
+  <template match="doc:tr">
+    <h:tr>
+      <apply-templates/>
+    </h:tr>
+  </template>
+
+  <template match="doc:td">
+    <h:td>
+      <apply-templates mode="text"/>
+    </h:td>
+  </template>
+
+  <template match="doc:section">
+    <h:div class="section">
+      <h:div class="heading">
+        <if test="exists(@id)">
+          <h:a name="{@id}"/>
+        </if>
+        <h:a name="{this:get-id(.)}"/>
+        <apply-templates select="." mode="get-label"/>
+        <text>. </text>
+        <apply-templates select="." mode="get-title"/>
+      </h:div>
+      <apply-templates/>
+    </h:div>
+  </template>
+
+  <template match="doc:ruleSection">
+    <variable name="rule" as="element(doc:rule)" select="exactly-one(doc:rule)"/>
+    <h:div class="rule-section">
+      <h:div class="heading">
+        <if test="exists(@id)">
+          <h:a name="{@id}"/>
+        </if>
+        <if test="exists($rule/@id)">
+          <h:a name="{$rule/@id}"/>
+        </if>
+        <h:a name="{this:get-id(.)}"/>
+        <apply-templates select="." mode="get-label"/>
+        <text>. </text>
+        <apply-templates select="." mode="get-title"/>
+      </h:div>
+      <apply-templates/>
+    </h:div>
+  </template>
+
+  <template match="doc:tableOfContents">
+    <apply-templates select="/doc:document" mode="gen-table-of-contents"/>
+  </template>
+
+  <template match="doc:index">
+    <h:ul>
+      <variable name="root" select="root(.)"/>
+      <for-each select="distinct-values(
+                        (: definitions :)
+                        for $definition in //doc:definition return $definition/@term
+                        )">
+        <sort select="lower-case(.)"/>
+        <variable name="term" as="xs:string" select="."/>
+        <h:li>
+          <value-of select="."/>
+          <text>: </text>
+          <variable name="entries" 
+                    select="$root//doc:definition[@term = $term]
+                            | $root//doc:xe[@term = $term]
+                            | $root//doc:xe[empty(@term) and string(.) = $term]
+                            | $root//doc:termRef[@term = $term]
+                            | $root//doc:termRef[empty(@term) and string(.) = $term]
+                            "/>
+          <for-each select="($entries)">
+            <if test="position() &gt; 1">
+              <text>, </text>
+            </if>
+            <h:a href="#{this:get-id(.)}">
+              <text>Section </text>
+              <apply-templates select="ancestor-or-self::doc:section[1]" mode="get-label"/>
+              <if test="self::doc:definition"> (definition)</if>
+            </h:a>
+          </for-each>
+        </h:li>
+      </for-each>
+    </h:ul>
+  </template>
+
+  <template match="doc:indexOfDefinitions">
+    <h:ul>
+      <for-each select="//doc:definition">
+        <sort select="lower-case(@term)"> </sort>
+        <h:li>
+          <h:a href="#{this:get-id(.)}">
+            <value-of select="@term"/>
+          </h:a>: <apply-templates select="ancestor::doc:section[1]" mode="get-reference"/>
+        </h:li>
+      </for-each>
+    </h:ul>
+  </template>
+
+  <template match="doc:indexOfRules">
+    <h:ul>
+      <for-each select="//doc:rule">
+        <h:li>
+          <apply-templates select="." mode="get-reference"/>
+          <text>: </text>
+          <apply-templates select="ancestor::doc:section[1]" mode="get-reference"/>
+        </h:li>
+      </for-each>
+    </h:ul>
+  </template>
+
+  <template match="doc:tableOfTables">
+    <h:ul>
+      <for-each select="//doc:table[exists(doc:title)]">
+        <h:li>
+          <h:a href="#{this:get-id(.)}">
+            <apply-templates select="." mode="get-label"/>
+            <text>: </text>
+            <apply-templates select="." mode="get-title"/>
+          </h:a>
+        </h:li>
+      </for-each>
+    </h:ul>
+  </template>
+
+  <template match="doc:tableOfFigures">
+    <h:ul>
+      <for-each select="//doc:figure">
+        <h:li>
+          <h:a href="#{this:get-id(.)}">
+            <apply-templates select="." mode="get-label"/>
+            <text>: </text>
+            <apply-templates select="." mode="get-title"/>
+          </h:a>
+        </h:li>
+      </for-each>
+    </h:ul>
+  </template>
+
+  <template match="doc:ul">
+    <h:ul>
+      <apply-templates/>
+    </h:ul>
+  </template>
+
+  <template match="doc:ol">
+    <h:ol>
+      <apply-templates/>
+    </h:ol>
+  </template>
+
+  <template match="doc:li">
+    <h:li>
+      <choose>
+        <when test="count(element()) = 1 and doc:p">
+          <apply-templates select="doc:p/node()" mode="text"/>
+        </when>
+        <otherwise>
+          <apply-templates/>
+        </otherwise>
+      </choose>
+    </h:li>
+  </template>
+
+  <template match="doc:bogusDefinition | doc:definition">
+    <h:div class="box">
+      <h:div class="normativeHead">
+        <h:a name="{this:get-id(.)}"/>
+        <text>[Definition: </text>
+        <choose>
+          <when test="self::doc:definition">
+            <h:dfn>
+              <value-of select="@term"/>
+            </h:dfn>
+          </when>
+          <otherwise>
+            <value-of select="@term"/>
+          </otherwise>
+        </choose>
+        <text>]</text>
+      </h:div>
+      <h:div class="sub">
+        <apply-templates/>
+      </h:div>
+    </h:div>
+  </template>
+
+  <template match="doc:bogusPrinciple">
+    <h:div class="box">
+      <h:div class="normativeHead">
+        <text>[Principle </text>
+        <value-of select="@number"/>
+        <text>]</text>
+      </h:div>
+      <h:div class="sub">
+        <apply-templates/>
+      </h:div>
+    </h:div>
+  </template>
+
+  <template match="doc:principle">
+    <h:div class="box">
+      <h:div class="normativeHead">
+        <h:a name="{this:get-id(.)}"/>
+        <text>[</text>
+        <apply-templates select="." mode="get-label"/>
+        <text>]</text>
+      </h:div>
+      <h:div class="sub">
+        <apply-templates/>
+      </h:div>
+    </h:div>
+  </template>
+
+  <template match="doc:bogusRule">
+    <h:div class="box">
+      <h:div class="normativeHead">
+        <text>[Rule </text>
+        <value-of select="@section"/>
+        <text>-</text>
+        <value-of select="@number"/>
+        <text>]</text>
+        <text> (</text>
+        <value-of select="@applicability"/>
+        <text>)</text>
+        <if test="exists(@class)">
+          <text> (</text>
+          <value-of select="@class"/>
+          <text>)</text>
+        </if>
+      </h:div>
+      <apply-templates/>
+    </h:div>
+  </template>
+
+  <template match="doc:rule">
+    <h:div class="box">
+      <h:div class="normativeHead">
+        <if test="empty(parent::doc:ruleSection)">
+          <if test="exists(@id)">
+            <h:a name="{@id}"/>
+          </if>
+          <h:a name="{this:get-id(.)}"/>
+        </if>
+        <text>[</text>
+        <apply-templates select="." mode="get-label"/>
+        <text>]</text>
+        <sequence select="this:get-rule-applicability(., true())"/>
+        <if test="exists(@class)">
+          <text> (</text>
+          <value-of select="@class"/>
+          <text>)</text>
+        </if>
+      </h:div>
+      <!--
+      <h:div class="sub">
+      -->
+        <apply-templates/>
+      <!--
+      </h:div>
+      -->
+    </h:div>
+  </template>
+
+  <template match="doc:meta">
+    <h:div class="meta">
+      <apply-templates/>
+    </h:div>
+  </template>
+
+  <template match="doc:figure">
+    <h:div class="figure">
+      <h:div class="caption">
+        <h:a name="{this:get-id(.)}"/>
+        <apply-templates select="." mode="get-label"/>
+        <text>: </text>
+        <apply-templates select="." mode="get-title"/>
+      </h:div>
+      <h:div class="box">
+        <apply-templates/>
+      </h:div>
+    </h:div>
+  </template>
+
+  <template match="doc:reference">
+    <h:p class="hang">
+      <h:a name="{this:get-id(.)}"/>
+      <h:span class="ref">
+        <apply-templates select="." mode="get-label"/>
+      </h:span>
+      <text>: </text>
+      <apply-templates select="doc:p[1]/node()" mode="text"/>
+    </h:p>
+    <h:div class="sub">
+      <apply-templates select="*[position() != 1]"/>
+    </h:div>
+  </template>
+
+  <template match="doc:pre">
+    <h:pre>
+      <apply-templates mode="text">
+        <with-param name="text-is-preformatted" as="xs:boolean" select="true()" tunnel="yes"/>
+      </apply-templates>
+    </h:pre>
+  </template>
+
+  <template match="doc:issue" priority="1" mode="text">
+    <message>
+      <value-of select="f:get-location(.)"/>
+      <text>:issue: </text>
+      <value-of select="if (exists(@note)) then @note else ."/>
+      <if test="exists(@bug)"> (<value-of select="@bug"/>)</if>
+    </message>
+    <h:span class="issue">
+      <if test="exists(@bug)">
+        <h:a href="{@bug}" target="_blank" title="{@bug}">[bug]</h:a>
+      </if>
+      <if test="exists(@from)">
+        <h:a href="{@from}" target="_blank" title="{@from}">[from]</h:a>
+      </if>
+      <h:a name="{this:get-id(.)}" href="#{this:get-id(.)}" title="{if (exists(@note)) then @note else .}">
+        <apply-templates mode="text"/>
+      </h:a>
+    </h:span>
+  </template>
+
+  <xe:mode mode="gen-table-of-contents">
+
+    <template match="doc:document" mode="gen-table-of-contents">
+      <h:ul>
+        <apply-templates mode="gen-table-of-contents"/>
+      </h:ul>
+    </template>
+
+    <template match="doc:section" mode="gen-table-of-contents">
+      <h:li>
+        <h:a href="#{this:get-id(.)}">
+          <apply-templates select="." mode="get-label"/>
+          <text>. </text>
+          <apply-templates select="." mode="get-title"/>
+        </h:a>
+        <variable name="descendants" as="element()*"
+                  select="descendant::doc:section"/>
+        <if test="exists($descendants)">
+          <h:ul>
+            <apply-templates mode="gen-table-of-contents"/>
+          </h:ul>
+        </if>
+      </h:li>
+    </template>
+
+    <template match="node()" mode="gen-table-of-contents" priority="-1">
+      <apply-templates mode="gen-table-of-contents"/>
+    </template>
+
+    <template match="text()" mode="gen-table-of-contents"/>
+
+  </xe:mode>
+
+  <xe:mode mode="get-reference">
+
+    <template match="doc:figure" mode="get-reference">
+      <param name="source" as="element()?" select="()"/>
+      <h:a href="#{this:get-id(.)}">
+        <apply-templates select="." mode="get-label"/>
+        <text>, </text>
+        <h:em>
+          <apply-templates select="." mode="get-title"/>
+        </h:em>
+        <if test="exists($source) and empty($source/ancestor::doc:rule)">
+          <value-of select="common:get-below-or-above($source, .)"/>
+        </if>
+      </h:a>
+    </template>
+
+    <template match="doc:reference" mode="get-reference">
+      <param name="source" as="element()?" select="()"/>
+      <h:a href="#{this:get-id(.)}" class="ref">
+        <apply-templates select="." mode="get-label"/>
+      </h:a>
+    </template>
+
+    <template match="doc:section" mode="get-reference">
+      <param name="source" as="element()?" select="()"/>
+      <h:a href="#{this:get-id(.)}">
+        <if test="not(common:section-is-appendix(.))">
+          <text>Section </text>
+        </if>
+        <apply-templates select="." mode="get-label"/>
+        <text>, </text>
+        <h:em>
+          <apply-templates select="." mode="get-title"/>
+        </h:em>
+        <if test="exists($source)">
+          <sequence select="common:get-below-or-above($source, .)"/>
+        </if>
+      </h:a>
+    </template>
+
+    <function name="this:get-rule-applicability">
+      <param name="rule" as="element()"/>
+      <param name="as-reference" as="xs:boolean"/>
+      <xe:assert test="node-name($rule) = ( xs:QName('doc:rule'), xs:QName('doc:bogusRule') )" context="$rule"
+                 >in this:get-rule-applicability($rule), $rule must be a doc:rule or doc:bogusRule.</xe:assert>
+      <variable name="conformance-targets" as="xs:string*" 
+                select="tokenize(normalize-space($rule/@applicability), ' ')"/>
+      <if test="exists($conformance-targets)">
+        <text> (</text>
+        <for-each select="$conformance-targets">
+          <variable name="conformance-target-id" select="."/>
+          <if test="position() != 1">
+            <text>, </text>
+          </if>
+          <variable name="resolved" 
+                    select="root($rule)//doc:*[string(@id) = string($conformance-target-id)]" 
+                    as="element(doc:conformance-target)?"/>
+          <xe:assert test="count($resolved) = 1" context="$rule">in this:get-rule-applicability($rule), conformance target (&quot;<value-of select="$conformance-target-id"/>&quot;) of rule must resolve to a conformance target ID.</xe:assert>
+          <choose>
+            <when test="$as-reference">
+              <apply-templates select="$resolved" mode="get-reference"/>
+            </when>
+            <otherwise>  
+              <apply-templates select="$resolved/node()" mode="text"/>
+            </otherwise>
+          </choose>
+        </for-each>
+        <text>)</text>
+      </if>
+    </function>
+
+    <template match="doc:ruleSection" mode="get-reference">
+      <param name="source" as="element()?" select="()"/>
+      <variable name="rule" as="element(doc:rule)" select="exactly-one(doc:rule)"/>
+      <h:a href="#{this:get-id(.)}">
+        <apply-templates select="." mode="get-label"/>
+        <text>, </text>
+        <h:em>
+          <apply-templates select="." mode="get-title"/>
+        </h:em>
+        <sequence select="this:get-rule-applicability($rule, false())"/>
+        <if test="exists($source)">
+          <sequence select="common:get-below-or-above($source, .)"/>
+        </if>
+      </h:a>
+    </template>
+
+    <template match="doc:conformance-target" mode="get-reference">
+      <param name="source" as="element()?" select="()"/>
+      <h:a href="#{this:get-id(.)}">
+        <apply-templates select="node()" mode="text"/>
+      </h:a>
+    </template>
+
+    <template match="doc:rule" mode="get-reference">
+      <param name="source" as="element()?" select="()"/>
+      <variable name="rule-section" as="element(doc:ruleSection)?" select="parent::doc:ruleSection"/>
+      <choose>
+        <when test="exists($rule-section)">
+          <apply-templates select="$rule-section" mode="get-reference">
+            <with-param name="source" select="$source"/>
+          </apply-templates>
+        </when>
+        <otherwise>
+          <h:a href="#{this:get-id(.)}">
+            <apply-templates select="." mode="get-label"/>
+            <sequence select="this:get-rule-applicability(., false())"/>
+            <if test="exists($source) and empty($source/ancestor::doc:rule)">
+              <value-of select="common:get-below-or-above($source, .)"/>
+            </if>
+          </h:a>
+        </otherwise>
+      </choose>
+    </template>
+
+    <template match="doc:principle" mode="get-reference">
+      <param name="source" as="element()?" select="()"/>
+      <h:a href="#{this:get-id(.)}">
+        <h:strong>
+          <text>[</text>
+          <apply-templates select="." mode="get-label"/>
+          <text>]</text>
+        </h:strong>
+        <if test="exists($source) and empty($source/ancestor::doc:rule)">
+          <value-of select="common:get-below-or-above($source, .)"/>
+        </if>
+      </h:a>
+    </template>
+
+    <template match="doc:definition" mode="get-reference">
+      <param name="source" as="element()?" select="()"/>
+      <h:a href="#{this:get-id(.)}">
+        <h:strong>
+          <text>[</text>
+          <apply-templates select="." mode="get-label"/>
+          <text>]</text>
+        </h:strong>
+      </h:a>
+    </template>
+
+    <template match="doc:table" mode="get-reference">
+      <param name="source" as="element()?" select="()"/>
+      <h:a href="#{this:get-id(.)}">
+        <apply-templates select="." mode="get-label"/>
+        <text>, </text>
+        <h:em>
+          <apply-templates select="." mode="get-title"/>
+        </h:em>
+        <if test="exists($source) and empty($source/ancestor::doc:rule)">
+          <value-of select="common:get-below-or-above($source, .)"/>
+        </if>
+      </h:a>
+    </template>
+
+  </xe:mode>
+
+  <xe:mode mode="text">
+
+    <template match="doc:code|doc:qName|doc:local-name" mode="text">
+      <h:code>
+        <apply-templates mode="text"/>
+      </h:code>
+    </template>
+
+    <template match="doc:var" mode="text">
+      <h:var>
+        <apply-templates mode="text"/>
+      </h:var>  
+    </template>
+
+    <template match="doc:namespace-uri-for-prefix" mode="text">
+      <variable name="namespace" as="xs:anyURI" 
+                select="namespace-uri-for-prefix(string-join(text(), ''), .)"/>
+      <h:code>
+        <value-of select="$namespace"/>
+      </h:code>
+    </template>
+
+    <template match="doc:termRef" mode="text">
+      <variable name="term" as="xs:string" 
+                select="normalize-space(string(if (exists(@term)) then @term else .))"/>
+      <variable name="definition" as="element(doc:definition)" 
+                select="exactly-one(//doc:definition[normalize-space(@term) = $term])"/>
+      <variable name="id" as="xs:string" 
+                select="this:get-id($definition)"/>
+      <h:a name="{this:get-id(.)}"/>
+      <h:a href="#{$id}">
+        <h:span class="termRef">
+          <apply-templates mode="text"/>
+        </h:span>
+      </h:a>
+    </template>
+
+    <template match="doc:conformance-target" mode="text">
+      <h:a name="{this:get-id(.)}"/>
+      <apply-templates mode="text"/>
+    </template>
+
+    <template match="doc:em" mode="text">
+      <h:em>
+        <apply-templates mode="text"/>
+      </h:em>
+    </template>
+
+    <template match="doc:xe" mode="text">
+      <h:a name="{this:get-id(.)}">
+        <apply-templates mode="text"/>
+      </h:a>
+    </template>
+
+    <template match="doc:char" mode="text">
+      <choose>
+        <when test="@name='aacute'">
+          <text>&#225;</text>
+        </when>
+        <when test="@name='ccedil'">
+          <text>&#231;</text>
+        </when>
+        <when test="@name='eacute'">
+          <text>&#233;</text>
+        </when>
+        <when test="@name='hellip'">
+          <text>&#8230;</text>
+        </when>
+        <when test="@name='ndash'">
+          <text>&#8211;</text>
+        </when>
+        <when test="@name='mdash'">
+          <text>&#8212;</text>
+        </when>
+        <when test="@name='middot'">
+          <text>&#183;</text>
+        </when>
+        <when test="@name='nbsp'">
+          <text>&#160;</text>
+        </when>
+        <when test="@name='ocirc'">
+          <text>&#244;</text>
+        </when>
+        <when test="@name='rarr'">
+          <text>&#8594;</text>
+        </when>
+        <when test="@name='rsquo'">
+          <text>&#8217;</text>
+        </when>
+        <when test="@name='sect'">
+          <text>&#167;</text>
+        </when>
+        <otherwise>
+          <xe:assert test="false()" context=".">Code is unprepared for occurrence of named character (@name=&quot;<value-of select="@name"/>&quot;).</xe:assert>
+        </otherwise>
+      </choose>
+    </template>
+  
+    <template match="doc:strong" mode="text">
+      <h:strong>
+        <apply-templates mode="text"/>
+      </h:strong>
+    </template>
+  
+    <template match="doc:q" mode="text">
+      <h:q>
+        <apply-templates mode="text"/>
+      </h:q>
+    </template>
+  
+    <template match="doc:link" mode="text">
+      <h:a class="url" target="_blank">
+        <attribute name="href">
+          <choose>
+            <when test="exists(@href)">
+              <value-of select="@href"/>
+            </when>
+            <otherwise>
+              <value-of select="."/>
+            </otherwise>
+          </choose>
+        </attribute>
+        <apply-templates mode="text"/>
+      </h:a>
+    </template>
+
+    <template match="doc:a" mode="text">
+      <h:a target="_blank" href="{@href}">
+        <apply-templates mode="text"/>
+      </h:a>
+    </template>
+
+  </xe:mode>
+
+  <function name="this:get-id" as="xs:string">
+    <param name="node" as="node()?"/>
+    <value-of>
+      <apply-templates select="$node" mode="get-id"/>
+    </value-of>
+  </function>
+
+  <xe:mode mode="get-id">
+    <template match="*" priority="-1" mode="get-id">
+      <value-of select="if (exists(@id))
+                          then @id
+                          else generate-id(.)"/>
+    </template>
+
+    <template match="doc:section" mode="get-id">
+      <value-of select="concat(
+                          (if (exists(ancestor-or-self::doc:section[common:section-is-appendix(.)]))
+                           then 'appendix'
+                           else 'section'),
+                          '_',
+                          common:section-get-number(.))"/>
+    </template>
+
+    <template match="doc:ruleSection" mode="get-id">
+      <variable name="rule" as="element(doc:rule)" select="exactly-one(doc:rule)"/>
+      <apply-templates select="$rule" mode="get-id"/>
+    </template>
+
+    <template match="doc:figure" mode="get-id">
+      <value-of select="concat('figure_', common:item-get-number(.))"/>
+    </template>
+
+    <template match="doc:rule" mode="get-id">
+      <value-of select="concat('rule_', common:item-get-number(.))"/>
+    </template>
+
+    <template match="doc:table" mode="get-id">
+      <value-of select="concat('table_', common:item-get-number(.))"/>
+    </template>
+
+    <template match="doc:principle" mode="get-id">
+      <value-of select="concat('principle_', common:principle-get-number(.))"/>
+    </template>
+
+    <template match="doc:definition" mode="get-id">
+      <value-of select="concat('definition_', 
+                               replace(replace(normalize-space(@term), ' ', '_'),
+                                       '[^-_A-Za-z0-9\.]', ''))"/>
+    </template>
+
+    <template match="doc:conformance-target" mode="get-id">
+      <value-of select="concat('conformance_target_', @id)"/>
+    </template>
+
+  </xe:mode>
+
+</stylesheet>

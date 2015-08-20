@@ -1,0 +1,495 @@
+<?xml version="1.0" encoding="UTF-8"?> <!-- -*-sgml-*- -->
+<stylesheet 
+   version="2.0"
+   xmlns:common="https://iead.ittl.gtri.org/wr24/document/functions/common/2011-10-05-1029"
+   xmlns:doc="https://iead.ittl.gtri.org/wr24/doc/2011-09-30-2258"
+   xmlns:f="http://ittl.gtri.org/wr24/2009-03-10-1439/xsl-functions"
+   xmlns:local="https://iead.ittl.gtri.org/wr24/document/functions/2012-07-23-1354/groff"
+   xmlns:xe="http://ittl.gtri.gatech.edu/wr24/2009-03-23-1736/xsl-extension"
+   xmlns:xs="http://www.w3.org/2001/XMLSchema"
+   xmlns="http://www.w3.org/1999/XSL/Transform">
+
+  <include href="common.xsl"/>
+
+  <output method="text" version="1.0" indent="no"/>
+
+<!-- not using schema aware processing.
+  <import-schema namespace="https://iead.ittl.gtri.org/wr24/doc/2011-09-30-2258"
+                 schema-location="doc.xsd"/>
+-->
+
+  <template match="doc:document">
+    <text>.\" this is a comment -*-nroff-*-
+.\" turn off hyphenation
+.\"   (this doesn't work, so is commented out)
+.\" .nh
+.\" adjust left (no justification)
+.ad l
+.\" line length in characters
+.nr LL 75m
+.\" page length in inches
+.pl 9999i
+.\" headers and footers
+.OH ''''
+.EH ''''
+.OF ''''
+.EF ''''
+.\" standard indent = 4 characters
+.nr PI 4m
+.\" quoted paragraph spacing
+.nr QI 4m
+.\" indentation for DS and DE
+.nr DI 0
+.\" inter-paragraph spacing = 0 lines. Use ".sp 1" to put in a line break
+.nr PD 0
+</text>
+    <text>.LP&#10;</text>
+    <apply-templates select="doc:title/node()" mode="text"/>
+    <text>&#10;</text>
+    <text>.sp 1&#10;</text>
+    <text>.LP&#10;</text>
+    <text>Version </text>
+    <apply-templates select="doc:version/node()" mode="text"/>
+    <text>&#10;</text>
+    <text>.sp 1&#10;</text>
+    <text>.LP&#10;</text>
+    <value-of select="format-date(doc:date, '[MNn] [D], [Y]', 'en', (), ())"/>
+    <text>&#10;</text>
+    <text>.sp 1&#10;</text>
+    <text>.LP&#10;</text>
+    <apply-templates select="doc:author/node()" mode="text"/>
+    <text>&#10;</text>
+    <text>.sp 1&#10;</text>
+    <apply-templates select="doc:flowStructureAbstract | doc:flowAbstract | doc:section | doc:comment | doc:subsection | doc:p | doc:pre | doc:reference | doc:ul | doc:ol | doc:tableOfContents | doc:tableOfFigures | doc:tableOfTables | doc:table | doc:blockQuote | doc:bogusDefinition | doc:definition | doc:bogusPrinciple | doc:principle | doc:bogusRule | doc:rule | doc:figure"/>
+  </template>
+
+  <template match="doc:subsection">
+    <text>.XP&#10;</text>
+    <apply-templates select="doc:title/node()" mode="text"/>
+    <text>&#10;</text>
+    <text>.sp 1&#10;</text>
+    <text>.RS&#10;</text>
+    <apply-templates/>
+    <text>.RE&#10;</text>
+  </template>
+
+  <template match="doc:p">
+    <text>.LP&#10;</text>
+    <apply-templates mode="text"/>
+    <text>&#10;.sp 1&#10;</text>
+  </template>
+
+  <template match="doc:pre">
+    <text>.LP&#10;</text>
+    <text>.DS&#10;</text>
+    <apply-templates mode="text">
+      <with-param name="text-is-preformatted" as="xs:boolean" select="true()" tunnel="yes"/>
+    </apply-templates>
+    <text>&#10;</text>
+    <text>.DE&#10;</text>
+    <text>.sp 1&#10;</text>
+  </template>
+  
+  <template match="doc:blockquote">
+    <text>.RS&#10;</text>
+    <apply-templates/>
+    <text>.RE&#10;</text>
+  </template>
+
+  <template match="doc:table">
+    <if test="exists(doc:title)">
+      <text>.XP&#10;</text>
+      <apply-templates select="." mode="get-label"/>
+      <text>: </text>
+      <apply-templates select="." mode="get-title"/>
+      <text>&#10;</text>
+      <text>.sp 1&#10;</text>
+    </if>
+    <text>.nr PI 0&#10;</text>
+    <text>.TS&#10;</text>
+    <for-each select="doc:theadr/doc:th">
+      <if test="position() &gt; 1">
+        <text> </text>
+      </if>
+      <variable name="style" as="xs:string*"
+                select="if (exists(@style)) 
+                          then tokenize(normalize-space(@style), ' ')
+                          else ()"/>
+      <choose>
+        <when test="'CENTER' = $style">
+          <text>c</text>
+        </when>
+        <otherwise>
+          <text>l</text>
+        </otherwise>
+      </choose>
+      <choose>
+        <when test="exists(@width)">
+          <text>w(</text>
+          <value-of select="@width"/>
+          <text>m)z</text>
+        </when>
+      </choose>
+    </for-each>
+    <text>.&#10;</text>
+    <apply-templates select="doc:theadr"/>
+    <text>_&#10;</text>
+    <apply-templates select="doc:tr"/>
+    <text>.TE&#10;</text>
+    <text>.nr PI 4m&#10;</text>
+  </template>
+
+  <template match="doc:theadr">
+    <apply-templates select="*"/>
+    <text>&#10;</text>
+  </template>
+
+  <template match="doc:th">
+    <if test="position() &gt; 1">
+      <text>&#9;</text>
+    </if>
+    <text>T{&#10;</text>
+    <apply-templates mode="text"/>
+    <text>&#10;T}</text>
+  </template>
+
+  <template match="doc:tr">
+    <apply-templates select="*"/>
+    <text>&#10;</text>
+  </template>
+
+  <template match="doc:td">
+    <if test="position() &gt; 1">
+      <text>&#9;</text>
+    </if>
+    <text>T{&#10;</text>
+    <apply-templates mode="text"/>
+    <text>&#10;T}</text>
+  </template>
+
+  <template match="doc:section">
+    <if test="exists(ancestor::doc:section)">
+      <text>.RE&#10;</text>
+    </if>
+    <text>.XP&#10;</text>
+    <apply-templates select="." mode="get-label"/>
+    <text>. </text>
+    <apply-templates select="." mode="get-title"/>
+    <text>&#10;</text>
+    <text>.sp 1&#10;</text>
+    <text>.RS&#10;</text>
+    <apply-templates/>
+    <text>.RE&#10;</text>
+    <if test="exists(ancestor::doc:section)">
+      <text>.RS&#10;</text>
+    </if>
+  </template>
+
+  <template match="doc:tableOfContents">
+    <apply-templates select="/doc:document" mode="gen-table-of-contents"/>
+    <text>.sp 1&#10;</text>
+  </template>
+
+  <template match="doc:tableOfTables">
+    <text>.LP&#10;[Table of tables omitted]&#10;</text>
+    <!--
+    <h:ul>
+      <for-each select="//doc:table[exists(doc:title)]">
+        <h:li>
+          <h:a href="#{generate-id(.)}">
+            <apply-templates select="." mode="get-label"/>
+            <text>: </text>
+            <apply-templates select="." mode="get-title"/>
+          </h:a>
+        </h:li>
+      </for-each>
+    </h:ul>
+    -->
+  </template>
+
+  <template match="doc:tableOfFigures">
+    <for-each select="//doc:figure">
+      <text>.XP&#10;</text>
+      <apply-templates select="." mode="get-label"/>
+      <text>: </text>
+      <apply-templates select="." mode="get-title"/>
+      <text>&#10;</text>
+    </for-each>
+    <text>.sp 1&#10;</text>
+  </template>
+
+  <template match="doc:ul|doc:ol">
+    <text>.RS&#10;</text>
+    <apply-templates/>
+    <text>.RE&#10;</text>
+  </template>
+
+  <template match="doc:li">
+    <choose>
+      <when test="exists(parent::doc:ul)">
+        <text>.IP \[bu] 4m&#10;</text>
+      </when>
+      <otherwise>
+        <text>.IP </text>
+        <value-of select="count(preceding-sibling::doc:li) + 1"/>
+        <text>. </text>
+        <value-of select="max( (4, 
+                                1 + string-length(
+                                      string(
+                                        count(following-sibling::doc:li) 
+                                        + count(preceding-sibling::doc:li)
+                                        + 1))))"/>
+        <text>&#10;</text>
+      </otherwise>
+    </choose>
+    <apply-templates select="element()[1]/node()" mode="text"/>
+    <text>&#10;</text>
+    <text>.sp 1&#10;</text>
+    <if test="count(element()) &gt; 1">
+      <text>.RS&#10;</text>
+      <apply-templates select="element()[position() &gt; 1]"/>
+      <text>.RE&#10;</text>
+    </if>
+  </template>
+
+  <template match="doc:principle|doc:bogusPrinciple|doc:definition|doc:bogusDefinition">
+    <text>.XP&#10;</text>
+    <text>[</text>
+    <apply-templates select="." mode="get-label"/>
+    <text>]</text>
+    <text>&#10;</text>
+    <text>.sp 1&#10;</text>
+    <text>.RS&#10;</text>
+    <apply-templates/>
+    <text>.RE&#10;</text>
+  </template>
+
+  <template match="doc:rule|doc:bogusRule">
+    <text>.XP&#10;</text>
+    <text>[</text>
+    <apply-templates select="." mode="get-label"/>
+    <text>]</text>
+    <if test="exists(@applicability)">
+      <text> (</text>
+      <value-of select="f:list-get-joined(@applicability, ', ')"/>
+      <text>)</text>
+    </if>
+    <text>&#10;</text>
+    <text>.sp 1&#10;</text>
+    <text>.RS&#10;</text>
+    <apply-templates/>
+    <text>.RE&#10;</text>
+  </template>
+
+  <template match="doc:figure">
+    <text>.XP&#10;</text>
+    <apply-templates select="." mode="get-label"/>
+    <text>: </text>
+    <apply-templates select="." mode="get-title"/>
+    <text>&#10;</text>
+    <text>.sp 1&#10;</text>
+    <text>.RS&#10;</text>
+    <apply-templates/>
+    <text>.RE&#10;</text>
+  </template>
+
+  <template match="doc:reference">
+    <text>.XP&#10;</text>
+    <apply-templates select="." mode="get-label"/>
+    <text>: </text>
+    <apply-templates select="doc:p[1]/node()" mode="text"/>
+    <text>&#10;</text>
+    <text>.RS&#10;</text>
+    <apply-templates select="doc:p[position() != 1]"/>
+    <text>.RE&#10;</text>
+    <text>.sp 1&#10;</text>
+  </template>
+
+  <xe:mode mode="gen-table-of-contents">
+
+    <template match="doc:document" mode="gen-table-of-contents">
+      <apply-templates mode="gen-table-of-contents"/>
+    </template>
+
+    <template match="doc:section" mode="gen-table-of-contents">
+      <text>.XP&#10;</text>
+      <apply-templates select="." mode="get-label"/>
+      <text>. </text>
+      <apply-templates select="." mode="get-title"/>
+      <text>&#10;</text>
+      <variable name="descendants" as="element()*"
+                select="descendant::doc:section"/>
+      <if test="exists($descendants)">
+        <text>.RS&#10;</text>
+        <apply-templates mode="gen-table-of-contents"/>
+        <text>.RE&#10;</text>
+      </if>
+    </template>
+
+    <template match="node()" mode="gen-table-of-contents" priority="-1">
+      <apply-templates mode="gen-table-of-contents"/>
+    </template>
+
+    <template match="text()" mode="gen-table-of-contents"/>
+
+  </xe:mode>
+
+  <xe:mode mode="text">
+    
+    <template match="doc:code" mode="text">
+      <variable name="needsQuotes" as="xs:boolean" select="empty(parent::doc:q)"/>
+      <if test="$needsQuotes">
+        <text>&quot;</text>
+      </if>
+      <text>\fC</text>
+      <apply-templates mode="text"/>
+      <text>\fP</text>
+      <if test="$needsQuotes">
+        <text>&quot;</text>
+      </if>
+    </template>
+  
+    <template match="doc:em" mode="text">
+      <text>\fI</text>
+      <apply-templates mode="text"/>
+      <text>\fP</text>
+    </template>
+  
+    <template match="doc:char" mode="text">
+      <!-- look for "single character escapes" in http://unixhelp.ed.ac.uk/CGI/man-cgi?groff+7 -->
+      <choose>
+        <when test="@name='aacute'">
+          <text>a</text>
+        </when>
+        <when test="@name='hellip'">
+          <text>...</text>
+        </when>
+        <when test="@name='mdash'">
+          <text>-</text>
+        </when>
+        <when test="@name='nbsp'">
+          <text>\ </text>
+        </when>
+        <when test="@name='rsquo'">
+          <text>'</text>
+        </when>
+        <otherwise>
+          <xe:assert test="false()" context=".">Code is unprepared for occurrence of named character (@name=&quot;<value-of select="@name"/>&quot;).</xe:assert>
+        </otherwise>
+      </choose>
+    </template>
+    
+    <template match="doc:strong" mode="text">
+      <text>\fB</text>
+      <apply-templates mode="text"/>
+      <text>\fP</text>
+    </template>
+    
+    <template match="doc:q" mode="text">
+      <variable name="depth" select="count(ancestor-or-self::doc:q) mod 2" as="xs:integer"/>
+      <choose>
+        <when test="$depth = 1">
+          <text>"</text>
+        </when>
+        <otherwise>
+          <text>`</text>
+        </otherwise>
+      </choose>
+      <apply-templates mode="text"/>
+      <choose>
+        <when test="$depth = 1">
+          <text>"</text>
+        </when>
+        <otherwise>'</otherwise>
+      </choose>
+    </template>
+    
+    <template match="doc:link" mode="text">
+      <text>\fC</text>
+      <apply-templates mode="text"/>
+      <text>\fP</text>
+    </template>
+  
+  </xe:mode>
+
+  <xe:mode mode="get-reference">
+
+    <template match="doc:figure" mode="get-reference">
+      <param name="source" as="element(doc:ref)" required="yes"/>
+      <apply-templates select="." mode="get-label"/>
+      <text>, </text>
+      <text>\fI</text>
+      <apply-templates select="." mode="get-title"/>
+      <text>\fP</text>
+      <if test="empty($source/ancestor::doc:rule)">
+        <value-of select="common:get-below-or-above($source, .)"/>
+      </if>
+    </template>
+
+    <template match="doc:reference" mode="get-reference">
+      <param name="source" as="element(doc:ref)" required="yes"/>
+      <apply-templates select="." mode="get-label"/>
+    </template>
+
+    <template match="doc:section" mode="get-reference">
+      <param name="source" as="element(doc:ref)" required="yes"/>
+      <if test="not(common:section-is-appendix(.))">
+        <text>Section </text>
+      </if>
+      <apply-templates select="." mode="get-label"/>
+      <text>, </text>
+      <text>\fI</text>
+      <apply-templates select="." mode="get-title"/>
+      <text>\fP</text>
+      <if test="empty($source/ancestor::doc:rule)">
+        <value-of select="common:get-below-or-above($source, .)"/>
+      </if>
+    </template>
+
+    <template match="doc:rule" mode="get-reference">
+      <param name="source" as="element(doc:ref)" required="yes"/>
+      <text>\fB</text>
+      <text>[</text>
+      <apply-templates select="." mode="get-label"/>
+      <text>]</text>
+      <text>\fP</text>
+      <if test="empty($source/ancestor::doc:rule)">
+        <value-of select="common:get-below-or-above($source, .)"/>
+      </if>
+    </template>
+
+    <template match="doc:definition" mode="get-reference">
+      <param name="source" as="element(doc:ref)" required="yes"/>
+      <text>\fB</text>
+      <text>[</text>
+      <apply-templates select="." mode="get-label"/>
+      <text>]</text>
+      <text>\fP</text>
+      <if test="empty($source/ancestor::doc:rule)">
+        <value-of select="common:get-below-or-above($source, .)"/>
+      </if>
+    </template>
+
+    <template match="doc:table" mode="get-reference">
+      <param name="source" as="element(doc:ref)" required="yes"/>
+      <text>Table </text>
+      <apply-templates select="." mode="get-label"/>
+      <text>, </text>
+      <text>\fI</text>
+      <apply-templates select="." mode="get-title"/>
+      <text>\fP</text>
+      <if test="empty($source/ancestor::doc:rule)">
+        <value-of select="common:get-below-or-above($source, .)"/>
+      </if>
+    </template>
+
+  </xe:mode>
+
+</stylesheet>
+<!-- 
+  Local Variables:
+  mode: sgml
+  indent-tabs-mode: nil
+  fill-column: 9999
+  End:
+-->

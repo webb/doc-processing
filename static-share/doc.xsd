@@ -1,0 +1,518 @@
+<?xml version="1.0" encoding="US-ASCII"?>
+<schema
+   targetNamespace="https://iead.ittl.gtri.org/wr24/doc/2011-09-30-2258"
+   xmlns:doc="https://iead.ittl.gtri.org/wr24/doc/2011-09-30-2258"
+   xmlns:xs="http://www.w3.org/2001/XMLSchema"
+   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+   xmlns="http://www.w3.org/2001/XMLSchema">
+
+  <element name="document" type="doc:documentType"/>
+
+  <complexType name="documentType">
+    <sequence>
+      <element ref="doc:title"/>
+      <element ref="doc:version"/>
+      <element ref="doc:date"/>
+      <element ref="doc:author"/>
+      <element ref="doc:blurbSet" minOccurs="0" maxOccurs="unbounded"/>
+      <element ref="doc:flowStructureAbstract" minOccurs="0" maxOccurs="unbounded"/>
+    </sequence>
+  </complexType>
+
+  <element name="title" type="doc:textType"/>
+  <element name="version" type="doc:textType"/>
+  <element name="date" type="date"/>
+  <element name="author" type="doc:textType"/>
+
+  <element name="blurbSet">
+    <complexType>
+      <attribute name="id" type="xs:ID"/>
+    </complexType>
+  </element>
+
+  <element name="flowStructureAbstract" abstract="true">
+    <annotation><documentation
+      >Top-level blocks, including sections.</documentation></annotation>
+  </element>
+
+  <element name="flowAbstract" abstract="true" substitutionGroup="doc:flowStructureAbstract">
+    <annotation><documentation>
+        Top-level blocks, but not sections. This keeps lower level things from including sections inside them. Includes paragraphs, figures, and rules.</documentation></annotation>
+  </element>
+
+  <element name="subsection" type="doc:subsectionType" substitutionGroup="doc:flowAbstract">
+    <annotation>
+      <documentation>Represents a section with no section number,
+      which doesn't have a table of contents entry.</documentation>
+    </annotation>
+  </element>
+
+  <element name="sub" substitutionGroup="doc:flowAbstract" type="doc:flowType">
+    <annotation><documentation
+      >Denotes a block of text that is subordinate to its previous sibling.</documentation></annotation>
+  </element>
+
+  <element name="image" substitutionGroup="doc:flowAbstract">
+    <complexType>
+      <attribute name="src" type="xs:anyURI"/>
+    </complexType>
+  </element>
+
+  <complexType name="subsectionType">
+    <sequence>
+      <element ref="doc:title"/>
+      <element ref="doc:flowAbstract" minOccurs="0" maxOccurs="unbounded"/>
+    </sequence>
+    <attribute name="id" type="ID" use="optional"/>
+  </complexType>
+
+  <element name="section" type="doc:sectionType" substitutionGroup="doc:flowStructureAbstract">
+    <annotation>
+      <documentation>Represents a section with a section number, which
+      will have a table of contents entry.</documentation>
+    </annotation>
+  </element>
+
+  <element name="ruleSection" type="doc:sectionType" substitutionGroup="doc:flowStructureAbstract">
+    <annotation>
+      <documentation>Represents a section with a section number, which
+      will have a table of contents entry.</documentation>
+    </annotation>
+  </element>
+
+  <complexType name="sectionType">
+    <sequence>
+      <element ref="doc:title"/>
+      <element ref="doc:flowStructureAbstract" minOccurs="0" maxOccurs="unbounded"/>
+    </sequence>
+    <attribute name="id" type="ID"/>
+    <attribute name="isAppendix">
+      <simpleType>
+        <restriction base="boolean">
+          <pattern value="true"/>
+        </restriction>
+      </simpleType>
+    </attribute>
+  </complexType>
+
+  <element name="p" type="doc:textType" substitutionGroup="doc:flowAbstract"/>
+
+  <element name="listOfSections" type="doc:emptyType" substitutionGroup="doc:flowAbstract"/>
+
+  <element name="p-todo" type="doc:textType" substitutionGroup="doc:flowAbstract">
+    <annotation ><documentation 
+      >A todo annotation that can be used at the block level.</documentation></annotation>
+  </element>
+
+  <element name="pre" type="doc:textType" substitutionGroup="doc:flowAbstract"/>
+
+  <element name="reference" substitutionGroup="doc:flowAbstract">
+    <complexType>
+      <sequence>
+        <element ref="doc:flowAbstract" maxOccurs="unbounded"/>
+      </sequence>
+      <attribute name="label" type="string"/>
+      <attribute name="id" type="ID" use="required"/>
+    </complexType>
+  </element>
+
+  <complexType name="textType" mixed="true">
+    <sequence>
+      <element ref="doc:textAbstract" minOccurs="0" maxOccurs="unbounded"/>
+    </sequence>
+    <attribute name="memberOf" type="IDREFS"/>
+  </complexType>
+
+  <element name="xmlBlurb" substitutionGroup="doc:textAbstract">
+    <complexType>
+      <sequence>
+        <any processContents="strict" minOccurs="0" maxOccurs="unbounded"/>
+      </sequence>
+      <attribute name="memberOf" type="IDREFS"/>
+      <attribute name="id" type="ID" use="required"/>
+    </complexType>
+  </element>
+
+  <element name="textBlurb" substitutionGroup="doc:textAbstract">
+    <complexType>
+      <simpleContent>
+        <extension base="xs:string">
+          <attribute name="memberOf" type="IDREFS"/>
+          <attribute name="id" type="ID" use="required"/>
+        </extension>
+      </simpleContent>
+    </complexType>
+  </element>
+
+  <element name="todo" substitutionGroup="doc:textAbstract">
+    <annotation><documentation>Use this for document bugs, not more complicated issues</documentation></annotation>
+  </element>
+
+  <element name="comment" substitutionGroup="doc:flowStructureAbstract">
+    <complexType mixed="true">
+      <sequence>
+        <any minOccurs="0" maxOccurs="unbounded" processContents="skip"/>
+      </sequence>
+    </complexType>
+  </element>
+
+  <element name="issue" substitutionGroup="doc:textAbstract">
+    <annotation><documentation>This is really intended to be just an anchor into the document. If there are details and back and forth, handle that elsewhere.</documentation></annotation>
+    <complexType>
+      <complexContent>
+        <extension base="doc:textType">
+        <attribute name="from" type="anyURI">
+          <annotation><documentation
+            >email address of the person who is responsible for this issue</documentation></annotation>
+        </attribute>
+        <attribute name="note" type="string">
+          <annotation><documentation
+            >Description of the issue. If it does not exist, use the text() of the issue.</documentation></annotation>
+        </attribute>
+        <attribute name="bug" type="anyURI">
+          <annotation><documentation
+            >URI of the bug in a bug tracking system or other href</documentation></annotation>
+        </attribute>
+      </extension>
+      </complexContent>
+    </complexType>
+  </element>
+  
+  <element name="textAbstract" abstract="true"/>
+  <element name="code" substitutionGroup="doc:textAbstract" type="doc:textType"/>
+  <element name="var" substitutionGroup="doc:textAbstract" type="doc:textType"/>
+  <element name="em" substitutionGroup="doc:textAbstract" type="doc:textType"/>
+  <element name="strong" substitutionGroup="doc:textAbstract" type="doc:textType"/>
+  <element name="q" substitutionGroup="doc:textAbstract" type="doc:textType"/>
+  <element name="qName" substitutionGroup="doc:textAbstract" type="QName">
+    <annotation><documentation
+    >Use as a surrounding block for QNames / qualified names, to ensure that namespace prefixes are bound, and that formatting is consistent across the document.</documentation></annotation>
+  </element>
+
+  <element name="local-name" substitutionGroup="doc:textAbstract" type="NCName">
+    <annotation><documentation>Use as a surrounding block for local names
+       (e.g. no-namespace QNames), to provide consistent formatting to
+       qName. Otherwise we're using either "code" or "qName" with nasty default
+       namespace declarations.</documentation></annotation>
+  </element>
+
+  <element name="namespace-uri-for-prefix" substitutionGroup="doc:textAbstract" type="string">
+    <annotation><documentation
+    >Gets the bound namespace for the given prefix. Use like qName.</documentation></annotation>
+  </element>
+
+  <element name="conformance-target" substitutionGroup="doc:textAbstract">
+    <complexType>
+      <simpleContent>
+        <extension base="string">
+          <attribute name="id" type="xs:ID" use="required"/>
+        </extension>
+      </simpleContent>
+    </complexType>
+  </element>
+
+  <element name="link" substitutionGroup="doc:textAbstract" type="doc:hrefType">
+    <annotation>
+      <documentation>Note that this doesn't act like &lt;a href&gt;,
+      where the body is just normal text that is hyperlinked. This
+      whole documentation stack is targeted towards printable
+      documents, and invisible hrefs don't translate to
+      paper.</documentation>
+    </annotation>
+  </element>
+
+  <complexType name="hrefType" mixed="true">
+    <complexContent>
+      <extension base="doc:textType">
+        <attribute name="href" type="anyURI"/>
+      </extension>
+    </complexContent>
+  </complexType>
+
+  <element name="a" substitutionGroup="doc:textAbstract" type="doc:hrefType"/>
+
+  <element name="termRef" substitutionGroup="doc:textAbstract">
+    <complexType mixed="true">
+      <complexContent>
+        <extension base="doc:textType">
+          <attribute name="term" type="string"/>
+        </extension>
+      </complexContent>
+    </complexType>
+  </element>
+
+  <element name="xe" substitutionGroup="doc:textAbstract">
+    <annotation>
+      <documentation>An index entry. If there's an @term, then that's the term, otherwise it's the value of the 
+        xe element.</documentation>
+    </annotation>
+    <complexType mixed="true">
+      <complexContent>
+        <extension base="doc:textType">
+          <attribute name="term" type="string"/>
+          <attribute name="style">
+            <simpleType>
+              <restriction base="token">
+                <enumeration value="invisible"/>
+              </restriction>
+            </simpleType>
+          </attribute>
+        </extension>
+      </complexContent>
+    </complexType>
+  </element>
+
+  <element name="char" substitutionGroup="doc:textAbstract">
+    <!-- a good guide on special characters: http://www.alistapart.com/articles/emen/ -->
+    <!-- also: http://en.wikipedia.org/wiki/List_of_XML_and_HTML_character_entity_references -->
+    <!-- when possible, use the HTML 4 entity names (like "nbsp" instead of "non-breaking space") -->
+    <complexType>
+      <attribute name="name" use="required">
+        <simpleType>
+          <restriction base="token">
+            <!-- Sort these alphabetically. -->
+            <!-- Don't put "apos" in here, since you NEVER REALLY MEAN apos. You mean rsquo. -->
+            <enumeration value="aacute">
+              <annotation><documentation>latin small letter a with acute, &#225;, <![CDATA[&#225;]]></documentation></annotation>
+            </enumeration>
+            <enumeration value="ccedil">
+              <annotation><documentation>latin small letter c with cedilla, &#231;, <![CDATA[&#231;]]></documentation></annotation>
+            </enumeration>
+            <enumeration value="eacute">
+              <annotation><documentation>latin small letter e with acute, &#233;, <![CDATA[&#233;]]></documentation></annotation>
+            </enumeration>
+            <enumeration value="hellip">
+              <annotation><documentation>horizontal ellipsis (= three dot leader), &#8230;, <![CDATA[&#8230;]]></documentation></annotation>
+            </enumeration>
+            <enumeration value="mdash">
+              <annotation><documentation>em dash, size of a letter M., &#8212;,  <![CDATA[&#8212;]]></documentation></annotation>
+            </enumeration>
+            <enumeration value="middot">
+              <annotation><documentation>middle dot, AKA interpunct. Used in W3C specs around defined terms. &#183;, <![CDATA[&#183;]]></documentation></annotation>
+            </enumeration>
+            <enumeration value="nbsp">
+              <annotation><documentation>Non-breaking space / no-break space, &#160;, <![CDATA[&#160;]]></documentation></annotation>
+            </enumeration>
+            <enumeration value="ndash">
+              <annotation><documentation>n dash, size of a letter N., &#8211;,  <![CDATA[&#8211;]]></documentation></annotation>
+            </enumeration>
+            <enumeration value="ocirc">
+              <annotation><documentation>latin small letter o with circumflex, &#244;, <![CDATA[&#244;]]></documentation></annotation>
+            </enumeration>
+            <enumeration value="rarr">
+              <annotation><documentation>rightwards arrow, &#8594;, <![CDATA[&#8594]]></documentation></annotation>
+            </enumeration>
+            <enumeration value="rsquo">
+              <annotation><documentation>Right single quotation mark, commonly used as an apostrophe. <![CDATA[&#8217;]]></documentation></annotation>
+            </enumeration>
+            <enumeration value="sect">
+              <annotation><documentation>Section mark. &#167; <![CDATA[&#167;]]></documentation></annotation>
+            </enumeration>
+          </restriction>
+        </simpleType>
+      </attribute>
+    </complexType>
+  </element>
+
+  <element name="ref" substitutionGroup="doc:textAbstract">
+    <complexType>
+      <attribute name="idref" type="IDREF" use="required"/>
+    </complexType>
+  </element>
+
+  <element name="include-text" substitutionGroup="doc:textAbstract">
+    <complexType>
+      <attribute name="href" type="anyURI" use="required"/>
+    </complexType>
+  </element>
+
+  <element name="ul" type="doc:listType" substitutionGroup="doc:flowAbstract"/>
+
+  <element name="ol" type="doc:listType" substitutionGroup="doc:flowAbstract"/>
+
+  <complexType name="listType">
+    <sequence>
+      <element ref="doc:li" maxOccurs="unbounded"></element>
+    </sequence>
+  </complexType>
+
+  <element name="li" type="doc:flowType"/>
+
+  <element name="tableOfContents" type="doc:emptyType" substitutionGroup="doc:flowAbstract"/>
+  <element name="tableOfFigures" type="doc:emptyType" substitutionGroup="doc:flowAbstract"/>
+  <element name="tableOfTables" type="doc:emptyType" substitutionGroup="doc:flowAbstract"/>
+  <element name="index" type="doc:emptyType" substitutionGroup="doc:flowAbstract"/>
+  <element name="indexOfDefinitions" type="doc:emptyType" substitutionGroup="doc:flowAbstract"/>
+  <element name="indexOfRules" type="doc:emptyType" substitutionGroup="doc:flowAbstract"/>
+
+  <complexType name="emptyType">
+    <sequence>
+    </sequence>
+  </complexType>
+
+  <element name="table" type="doc:tableType" substitutionGroup="doc:flowAbstract"/>
+  
+  <complexType name="tableType">
+    <sequence>
+      <element ref="doc:title" minOccurs="0"/>
+      <element ref="doc:theadr"/>
+      <element ref="doc:tr" maxOccurs="unbounded"/>
+    </sequence>
+    <attribute name="id" type="ID"/>
+  </complexType>
+
+  <element name="theadr" type="doc:theadrType"/>
+
+  <complexType name="theadrType">
+    <sequence>
+      <element ref="doc:th" maxOccurs="unbounded"/>
+    </sequence>
+  </complexType>
+
+  <element name="th">
+    <complexType>
+      <complexContent>
+        <extension base="doc:textType">
+          <attribute name="width" type="integer" use="optional">
+            <annotation><documentation
+              >width of the field, in m/em character sizes.</documentation>
+            </annotation>
+          </attribute>
+          <attribute name="style" use="optional">
+            <simpleType>
+              <list>
+                <simpleType>
+                  <restriction base="token">
+                    <enumeration value="CENTER"/>
+                  </restriction>
+                </simpleType>
+              </list>
+            </simpleType>
+          </attribute>
+        </extension>
+      </complexContent>
+    </complexType>
+  </element>
+
+  <element name="tr" type="doc:trType"/>
+
+  <complexType name="trType">
+    <sequence>
+      <element ref="doc:td" maxOccurs="unbounded"/>
+    </sequence>
+  </complexType>
+
+  <element name="td" type="doc:textType"/>
+
+  <element name="blockquote" type="doc:flowType" substitutionGroup="doc:flowAbstract"/>
+
+  <complexType name="flowType">
+    <sequence>
+      <element ref="doc:flowAbstract" minOccurs="0" maxOccurs="unbounded"/>
+    </sequence>
+  </complexType>
+
+  <element name="bogusDefinition" substitutionGroup="doc:flowAbstract" type="doc:bogusDefinitionType"/>
+
+  <complexType name="bogusDefinitionType">
+    <complexContent>
+      <extension base="doc:flowType">
+        <attribute name="term" type="string" use="required"/>
+      </extension>
+    </complexContent>
+  </complexType>
+  
+  <element name="definition" substitutionGroup="doc:flowAbstract">
+    <complexType>
+      <complexContent>
+        <extension base="doc:flowType">
+          <attribute name="term" type="string" use="required"/>
+          <attribute name="id" type="ID"/>
+        </extension>
+      </complexContent>
+    </complexType>
+  </element>
+  
+  <element name="bogusPrinciple" substitutionGroup="doc:flowAbstract">
+    <complexType>
+      <complexContent>
+        <extension base="doc:flowType">
+          <attribute name="number" type="string" use="required"/>
+        </extension>
+      </complexContent>
+    </complexType>
+  </element>
+  
+  <element name="principle" substitutionGroup="doc:flowAbstract" type="doc:principleType"/>
+
+  <complexType name="principleType">
+    <complexContent>
+      <extension base="doc:flowType">
+        <attribute name="id" type="ID" use="optional"/>
+      </extension>
+    </complexContent>
+  </complexType>
+  
+  <element name="bogusRule" substitutionGroup="doc:flowAbstract" type="doc:bogusRuleType"/>
+
+  <complexType name="bogusRuleType">
+    <complexContent>
+      <extension base="doc:flowType">
+        <attribute name="section" type="string" use="required"/>
+        <attribute name="number" type="string" use="required"/>
+        <attribute name="applicability" type="string" use="optional"/>
+        <attribute name="class" type="string" use="optional"/>
+      </extension>
+    </complexContent>
+  </complexType>
+
+  <element name="rule" substitutionGroup="doc:flowAbstract">
+    <complexType>
+      <complexContent>
+        <extension base="doc:flowType">
+          <attribute name="applicability" use="optional" type="IDREFS"/>
+          <attribute name="id" type="ID" use="optional"/>
+          <attribute name="implementationStatus" use="optional">
+            <simpleType>
+              <restriction base="token">
+                <enumeration value="Impossible">
+                  <annotation><documentation
+                                 ></documentation></annotation>
+                </enumeration>
+                <enumeration value="Implemented"/>
+                <enumeration value="Unimplemented"/>
+              </restriction>
+            </simpleType>
+          </attribute>
+          <attribute name="class" use="optional">
+            <simpleType>
+              <restriction base="token">
+                <enumeration value="Constraint"/>
+                <enumeration value="Interpretation"/>
+              </restriction>
+            </simpleType>
+          </attribute>
+        </extension>
+      </complexContent>
+    </complexType>
+  </element>
+
+  <element name="figure" substitutionGroup="doc:flowAbstract" type="doc:subsectionType"/>
+
+  <element name="meta" substitutionGroup="doc:flowAbstract">
+    <complexType>
+      <sequence>
+        <element ref="doc:flowAbstract" maxOccurs="unbounded"/>
+      </sequence>
+    </complexType>
+  </element>
+  
+</schema>
+ 
+<!-- 
+  Local Variables:
+  mode: sgml
+  indent-tabs-mode: nil
+  fill-column: 80
+  End:
+-->

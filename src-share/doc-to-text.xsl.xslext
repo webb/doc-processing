@@ -1,0 +1,524 @@
+<?xml version="1.0" encoding="US-ASCII"?> <!-- -*-sgml-*- -->
+<stylesheet 
+   version="2.0"
+   xmlns:common="https://iead.ittl.gtri.org/wr24/document/functions/common/2011-10-05-1029"
+   xmlns:doc="https://iead.ittl.gtri.org/wr24/doc/2011-09-30-2258"
+   xmlns:f="http://ittl.gtri.org/wr24/2009-03-10-1439/xsl-functions"
+   xmlns:local="https://iead.ittl.gtri.org/wr24/document/functions/2012-07-23-1354/groff"
+   xmlns:xe="http://ittl.gtri.gatech.edu/wr24/2009-03-23-1736/xsl-extension"
+   xmlns:xs="http://www.w3.org/2001/XMLSchema"
+   xmlns="http://www.w3.org/1999/XSL/Transform">
+
+  <include href="common.xsl"/>
+
+  <output method="text" indent="no" encoding="US-ASCII"/>
+
+  <variable name="indent-size" select="3"/>
+
+  <!-- run text mode templates over something and return the string -->
+  <function name="local:apply-templates-as-text" as="xs:string">
+    <param name="context" as="node()"/>
+    <param name="text-is-preformatted" as="xs:string"/>
+    <value-of>
+      <apply-templates mode="text" select="$context/node()">
+        <with-param name="text-is-preformatted" tunnel="yes"
+                    select="if ($text-is-preformatted = 'is-preformatted')
+                            then true()
+                            else if ($text-is-preformatted = 'is-not-preformatted')
+                            then false()
+                            else error()"/>
+      </apply-templates>
+    </value-of>
+  </function>
+
+  <!-- copy a string a given number of times -->
+  <function name="local:spaces" as="xs:string">
+    <param name="times" as="xs:integer"/>
+    <value-of select="string-join(for $time in 1 to $times return ' ', '')"/>
+  </function>
+
+  <template match="doc:document">
+    <apply-templates select="doc:title/node()" mode="text"/>
+    <text>&#10;&#10;</text>
+    <text>Version </text>
+    <apply-templates select="doc:version/node()" mode="text"/>
+    <text>&#10;&#10;</text>
+    <value-of select="format-date(doc:date, '[MNn] [D], [Y]', 'en', (), ())"/>
+    <text>&#10;&#10;</text>
+    <apply-templates select="doc:author/node()" mode="text"/>
+    <text>&#10;&#10;</text>
+    <apply-templates select="doc:flowStructureAbstract | doc:flowAbstract | doc:section | doc:comment | doc:subsection | doc:p | doc:pre | doc:reference | doc:ul | doc:ol | doc:tableOfContents | doc:tableOfFigures | doc:tableOfTables | doc:table | doc:blockQuote | doc:bogusDefinition | doc:definition | doc:bogusPrinciple | doc:principle | doc:bogusRule | doc:rule | doc:figure"/>
+  </template>
+
+  <template match="doc:subsection">
+    <param name="indent" as="xs:integer" tunnel="yes" select="0"/>
+    <value-of select="local:spaces($indent)"/>
+    <apply-templates select="doc:title/node()" mode="text"/>
+    <text>&#10;&#10;</text>
+    <apply-templates>
+      <with-param name="indent" tunnel="yes" select="$indent + $indent-size"/>
+    </apply-templates>
+  </template>
+
+  <template match="doc:sub">
+    <param name="indent" as="xs:integer" tunnel="yes" select="0"/>
+    <apply-templates>
+      <with-param name="indent" tunnel="yes" select="$indent + $indent-size"/>
+    </apply-templates>
+  </template>
+
+  <template match="doc:p">
+    <param name="indent" as="xs:integer" tunnel="yes" select="0"/>
+    <if test="not(parent::doc:li and empty(preceding-sibling::*))">
+      <value-of select="local:spaces($indent)"/>
+    </if>
+    <apply-templates mode="text"/>
+    <text>&#10;&#10;</text>
+  </template>
+
+  <template match="doc:p-todo">
+    <param name="indent" as="xs:integer" tunnel="yes" select="0"/>
+    <value-of select="local:spaces($indent)"/>
+    <text>{</text>
+    <apply-templates mode="text"/>
+    <text>}</text>
+    <text>&#10;&#10;</text>
+  </template>
+
+  <template match="doc:pre">
+    <param name="indent" as="xs:integer" tunnel="yes" select="0"/>
+    <variable name="lines" select="tokenize(local:apply-templates-as-text(., 'is-preformatted'), '&#10;')"/>
+    <value-of select="string-join(
+                        for $index in 1 to count($lines),
+                            $line in $lines[$index]
+                        return 
+                            if ($index = 1 and parent::doc:li and empty(preceding-sibling::*))
+                              then $line
+                              else concat(local:spaces($indent), $line),
+                        '&#10;')"/>
+    <text>&#10;&#10;</text>
+  </template>
+  
+  <template match="doc:blockquote">
+    <param name="indent" as="xs:integer" tunnel="yes" select="0"/>
+    <apply-templates select="*">
+      <with-param name="indent" select="$indent + $indent-size" tunnel="yes"/>
+    </apply-templates>
+  </template>
+
+  <template match="doc:table">
+    <param name="indent" as="xs:integer" tunnel="yes" select="0"/>
+    <if test="exists(doc:title)">
+      <value-of select="local:spaces($indent)"/>
+      <apply-templates select="." mode="get-label"/>
+      <text>: </text>
+      <apply-templates select="." mode="get-title"/>
+      <text>&#10;&#10;</text>
+    </if>
+    <apply-templates select="doc:theadr|doc:tr">
+      <with-param name="indent" select="$indent + $indent-size" tunnel="yes"/>
+    </apply-templates>
+  </template>
+
+  <template match="doc:theadr">
+    <param name="indent" as="xs:integer" tunnel="yes" select="0"/>
+    <value-of select="local:spaces($indent)"/>
+    <apply-templates select="*"/>
+    <text>&#10;&#10;</text>
+  </template>
+
+  <template match="doc:tr">
+    <param name="indent" as="xs:integer" tunnel="yes" select="0"/>
+    <value-of select="local:spaces($indent)"/>
+    <apply-templates select="*"/>
+    <text>&#10;&#10;</text>
+  </template>
+
+  <template match="doc:th|doc:td">
+    <if test="position() &gt; 1">
+      <text>|</text>
+    </if>
+    <apply-templates mode="text"/>
+  </template>
+
+  <template match="doc:section | doc:ruleSection">
+    <variable name="indent" select="0"/>
+    <value-of select="local:spaces($indent)"/>
+    <apply-templates select="." mode="get-label"/>
+    <text>. </text>
+    <apply-templates select="." mode="get-title"/>
+    <text>&#10;&#10;</text>
+    <apply-templates>
+      <with-param name="indent" tunnel="yes" select="$indent + $indent-size"/>
+    </apply-templates>
+  </template>
+
+  <template match="doc:tableOfContents">
+    <param name="indent" as="xs:integer" tunnel="yes" select="0"/>
+    <value-of select="local:spaces($indent)"/>
+    <text>The table of contents is omitted from this edition.&#10;&#10;</text>
+  </template>
+
+  <template match="doc:index">
+    <param name="indent" as="xs:integer" tunnel="yes" select="0"/>
+    <value-of select="local:spaces($indent)"/>
+    <text>The index is omitted from this edition.&#10;&#10;</text>
+  </template>
+
+  <template match="doc:indexOfDefinitions">
+    <param name="indent" as="xs:integer" tunnel="yes" select="0"/>
+    <value-of select="local:spaces($indent)"/>
+    <text>The index of definitions is omitted from this edition.&#10;&#10;</text>
+  </template>
+
+  <template match="doc:indexOfRules">
+    <param name="indent" as="xs:integer" tunnel="yes" select="0"/>
+    <for-each select="//doc:rule">
+      <value-of select="local:spaces($indent)"/>
+      <apply-templates select="." mode="get-reference"/>
+      <text>: </text>
+      <apply-templates select="ancestor::doc:section[1]" mode="get-reference"/>
+      <text>&#10;</text>
+    </for-each>
+    <text>&#10;</text>
+  </template>
+
+  <template match="doc:image">
+    <param name="indent" as="xs:integer" tunnel="yes" select="0"/>
+    <value-of select="local:spaces($indent)"/>
+    <text>Images are omitted from this edition.&#10;&#10;</text>
+  </template>
+
+  <template match="doc:tableOfTables">
+    <param name="indent" as="xs:integer" tunnel="yes" select="0"/>
+    <value-of select="local:spaces($indent)"/>
+    <text>The table of tables is omitted from this edition.&#10;&#10;</text>
+  </template>
+
+  <template match="doc:tableOfFigures">
+    <param name="indent" as="xs:integer" tunnel="yes" select="0"/>
+    <value-of select="local:spaces($indent)"/>
+    <text>The table of figures is omitted from this edition.&#10;&#10;</text>
+  </template>
+
+  <template match="doc:ul|doc:ol">
+    <param name="indent" as="xs:integer" tunnel="yes" select="0"/>
+    <apply-templates>
+      <with-param name="indent" tunnel="yes" select="$indent + $indent-size"/>
+    </apply-templates>
+  </template>
+
+  <variable name="bullet-text" as="xs:string" select="'* '"/>
+
+  <template match="doc:li">
+    <param name="indent" as="xs:integer" tunnel="yes" select="0"/>
+    <value-of select="local:spaces($indent)"/>
+    <variable name="item-text" select="if (parent::doc:ul) 
+                                       then $bullet-text
+                                       else concat(string(count(preceding-sibling::doc:li) + 1), '. ')"/>
+    <variable name="longest-item-length" 
+              select="if (parent::doc:ul)
+                      then string-length($bullet-text)
+                      else string-length(concat(string(count(parent::*/doc:li)), '. '))"/>
+    <variable name="this-indent-size" select="max( ($indent-size, $longest-item-length) )"/>
+    <value-of select="$item-text"/>
+    <value-of select="local:spaces($this-indent-size - string-length($item-text))"/>
+    <apply-templates>
+      <with-param name="indent" select="$indent + $this-indent-size" tunnel="yes"/>
+    </apply-templates>
+  </template>
+
+  <template match="doc:listOfSections">
+    <param name="indent" as="xs:integer" tunnel="yes" select="0"/>
+    <if test="exists(parent::*/doc:section)">
+      <for-each select="parent::*/doc:section">
+        <value-of select="concat(local:spaces($indent), $bullet-text)"/>
+        <value-of>
+          <apply-templates select="." mode="get-reference"/>
+        </value-of>
+        <text>&#10;</text>
+      </for-each>
+      <text>&#10;</text>
+    </if>
+  </template>
+
+  <template match="doc:principle|doc:bogusPrinciple|doc:definition|doc:bogusDefinition">
+    <param name="indent" as="xs:integer" tunnel="yes" select="0"/>
+    <value-of select="local:spaces($indent)"/>
+    <text>[</text>
+    <apply-templates select="." mode="get-label"/>
+    <text>]</text>
+    <text>&#10;&#10;</text>
+    <apply-templates>
+      <with-param name="indent" select="$indent + $indent-size" tunnel="yes"/>
+    </apply-templates>
+  </template>
+
+  <template match="doc:rule|doc:bogusRule">
+    <param name="indent" as="xs:integer" tunnel="yes" select="0"/>
+    <value-of select="local:spaces($indent)"/>
+    <text>[</text>
+    <apply-templates select="." mode="get-label"/>
+    <text>]</text>
+    <if test="exists(@applicability)">
+      <text> (</text>
+      <value-of select="f:list-get-joined(@applicability, ', ')"/>
+      <text>)</text>
+    </if>
+    <text>&#10;&#10;</text>
+    <apply-templates>
+      <with-param name="indent" select="$indent + $indent-size" tunnel="yes"/>
+    </apply-templates>
+  </template>
+
+  <template match="doc:figure">
+    <param name="indent" as="xs:integer" tunnel="yes" select="0"/>
+    <value-of select="local:spaces($indent)"/>
+    <apply-templates select="." mode="get-label"/>
+    <text>: </text>
+    <apply-templates select="." mode="get-title"/>
+    <text>&#10;&#10;</text>
+    <apply-templates>
+      <with-param name="indent" select="$indent + $indent-size" tunnel="yes"/>
+    </apply-templates>
+  </template>
+
+  <template match="doc:reference">
+    <param name="indent" as="xs:integer" tunnel="yes" select="0"/>
+    <value-of select="local:spaces($indent)"/>
+    <apply-templates select="." mode="get-label"/>
+    <text>: </text>
+    <apply-templates select="doc:p[1]/node()" mode="text"/>
+    <text>&#10;&#10;</text>
+    <apply-templates select="doc:p[position() != 1]">
+      <with-param name="indent" select="$indent + $indent-size" tunnel="yes"/>
+    </apply-templates>
+  </template>
+
+  <xe:mode mode="gen-table-of-contents">
+
+    <template match="doc:document" mode="gen-table-of-contents">
+      <apply-templates mode="gen-table-of-contents"/>
+    </template>
+
+    <template match="doc:section" mode="gen-table-of-contents">
+      <text>.XP&#10;</text>
+      <apply-templates select="." mode="get-label"/>
+      <text>. </text>
+      <apply-templates select="." mode="get-title"/>
+      <text>&#10;</text>
+      <variable name="descendants" as="element()*"
+                select="descendant::doc:section"/>
+      <if test="exists($descendants)">
+        <text>.RS&#10;</text>
+        <apply-templates mode="gen-table-of-contents"/>
+        <text>.RE&#10;</text>
+      </if>
+    </template>
+
+    <template match="node()" mode="gen-table-of-contents" priority="-1">
+      <apply-templates mode="gen-table-of-contents"/>
+    </template>
+
+    <template match="text()" mode="gen-table-of-contents"/>
+
+  </xe:mode>
+
+  <xe:mode mode="text">
+
+    <template match="doc:termRef" mode="text">
+      <text>[</text>
+      <apply-templates mode="text"/>
+      <text>]</text>
+    </template>
+    
+    <template match="doc:xmlBlurb" mode="text" priority="1">
+      <param name="indent" as="xs:integer" tunnel="yes" select="0"/>
+      <value-of select="string-join(
+                          for $line 
+                            in tokenize(unparsed-text(resolve-uri(concat('xmlBlurb/', @id, '.txt'), base-uri(.))), '&#10;')
+                            return concat(local:spaces($indent), $line), 
+                          '&#10;')"/>
+    </template>
+
+    <template match="doc:conformance-target" mode="text">
+      <apply-templates mode="text"/>
+    </template>
+
+    <template match="doc:code | doc:var | doc:qName" mode="text">
+      <apply-templates mode="text"/>
+    </template>
+  
+    <template match="doc:namespace-uri-for-prefix" mode="text">
+      <value-of select="exactly-one(namespace-uri-for-prefix(string-join(text(), ''), .))"/>
+    </template>
+  
+    <template match="doc:em" mode="text">
+      <apply-templates mode="text"/>
+    </template>
+
+    <template match="doc:xe" mode="text">
+      <apply-templates mode="text"/>
+    </template>
+  
+    <template match="doc:char" mode="text">
+      <!-- look for "single character escapes" in http://unixhelp.ed.ac.uk/CGI/man-cgi?groff+7 -->
+      <choose>
+        <when test="@name='aacute'">
+          <text>a</text>
+        </when>
+        <when test="@name='ccedil'">
+          <text>a</text>
+        </when>
+        <when test="@name='eacute'">
+          <text>e</text>
+        </when>
+        <when test="@name='hellip'">
+          <text>...</text>
+        </when>
+        <when test="@name='mdash'">
+          <text>--</text>
+        </when>
+        <when test="@name='middot'">
+          <text></text>
+        </when>
+        <when test="@name='ndash'">
+          <text>-</text>
+        </when>
+        <when test="@name='nbsp'">
+          <text> </text>
+        </when>
+        <when test="@name='ocirc'">
+          <text>o</text>
+        </when>
+        <when test="@name='rarr'">
+          <text>-&gt;</text>
+        </when>
+        <when test="@name='rsquo'">
+          <text>'</text>
+        </when>
+        <when test="@name='sect'">
+          <text>section </text>
+        </when>
+        <otherwise>
+          <xe:assert test="false()" context=".">Code is unprepared for occurrence of named character (@name=&quot;<value-of select="@name"/>&quot;).</xe:assert>
+        </otherwise>
+      </choose>
+    </template>
+    
+    <template match="doc:strong" mode="text">
+      <apply-templates mode="text"/>
+    </template>
+    
+    <template match="doc:q" mode="text">
+      <variable name="depth" select="count(ancestor-or-self::doc:q) mod 2" as="xs:integer"/>
+      <choose>
+        <when test="$depth = 1">
+          <text>&quot;</text>
+        </when>
+        <otherwise>
+          <text>&#96;</text> <!-- back tick ` grave quote -->
+        </otherwise>
+      </choose>
+      <apply-templates mode="text"/>
+      <choose>
+        <when test="$depth = 1">
+          <text>&quot;</text>
+        </when>
+        <otherwise>&apos;</otherwise>
+      </choose>
+    </template>
+    
+    <template match="doc:a | doc:link" mode="text">
+      <apply-templates mode="text"/>
+    </template>
+  
+  </xe:mode>
+
+  <xe:mode mode="get-reference">
+
+    <template match="doc:figure" mode="get-reference">
+      <param name="source" as="element()?" select="()"/>
+      <apply-templates select="." mode="get-label"/>
+      <text>, </text>
+      <apply-templates select="." mode="get-title"/>
+      <if test="exists($source) and empty($source/ancestor::doc:rule)">
+        <value-of select="common:get-below-or-above($source, .)"/>
+      </if>
+    </template>
+
+    <template match="doc:reference" mode="get-reference">
+      <param name="source" as="element()?" select="()"/>
+      <apply-templates select="." mode="get-label"/>
+    </template>
+
+    <template match="doc:section" mode="get-reference">
+      <param name="source" as="element()?" select="()"/>
+      <if test="not(common:section-is-appendix(.))">
+        <text>Section </text>
+      </if>
+      <apply-templates select="." mode="get-label"/>
+      <text>, </text>
+      <apply-templates select="." mode="get-title"/>
+      <if test="exists($source) and empty($source/ancestor::doc:rule)">
+        <value-of select="common:get-below-or-above($source, .)"/>
+      </if>
+    </template>
+
+    <template match="doc:ruleSection" mode="get-reference">
+      <param name="source" as="element()?" select="()"/>
+      <variable name="rule" as="element(doc:rule)" select="exactly-one(doc:rule)"/>
+      <apply-templates select="$rule" mode="get-label"/>
+      <text>, </text>
+      <apply-templates select="." mode="get-title"/>
+      <if test="exists($source) and empty($source/ancestor::doc:rule)">
+        <value-of select="common:get-below-or-above($source, .)"/>
+      </if>
+    </template>
+
+    <template match="doc:rule" mode="get-reference">
+      <param name="source" as="element()?" select="()"/>
+      <choose>
+        <when test="exists(parent::doc:ruleSection)">
+          <apply-templates select="parent::doc:ruleSection" mode="get-reference"/>
+        </when>
+        <otherwise>
+          <apply-templates select="." mode="get-label"/>
+          <if test="exists($source) and empty($source/ancestor::doc:rule)">
+            <value-of select="common:get-below-or-above($source, .)"/>
+          </if>
+        </otherwise>
+      </choose>
+    </template>
+
+    <template match="doc:principle | doc:definition" mode="get-reference">
+      <param name="source" as="element()?" select="()"/>
+      <text>[</text>
+      <apply-templates select="." mode="get-label"/>
+      <text>]</text>
+      <if test="exists($source) and empty($source/ancestor::doc:rule)">
+        <value-of select="common:get-below-or-above($source, .)"/>
+      </if>
+    </template>
+
+    <template match="doc:table" mode="get-reference">
+      <param name="source" as="element()?" select="()"/>
+      <text>Table </text>
+      <apply-templates select="." mode="get-label"/>
+      <text>, </text>
+      <apply-templates select="." mode="get-title"/>
+      <if test="exists($source) and empty($source/ancestor::doc:rule)">
+        <value-of select="common:get-below-or-above($source, .)"/>
+      </if>
+    </template>
+
+  </xe:mode>
+
+</stylesheet>
+<!-- 
+  Local Variables:
+  mode: sgml
+  indent-tabs-mode: nil
+  fill-column: 9999
+  End:
+-->

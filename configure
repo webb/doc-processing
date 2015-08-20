@@ -1,0 +1,94 @@
+#!/usr/bin/env bash
+
+#HELP:configure: set up installation
+
+. ./configure-helper.bash
+
+config_decl_set_package_name doc-processing
+
+#HELP:Options:
+
+#HELP:  -h | --help: show this help
+opt_help () {
+    config_ensure "${FUNCNAME[0]} must have no parameters. Got $#" test $# = 0
+    config_print_help
+    exit 0
+}
+
+#HELP:  -p $dir | --prefix=$dir: set $dir as installation destination
+unset prefix
+opt_prefix () {
+    config_ensure "${FUNCNAME[0]} must have 1 parameter. Got $#" test $# = 1
+    prefix="$1"
+    config_ensure "value of prefix was not directory ($prefix)" test -d "$prefix"
+}
+
+while getopts :hp:-: option
+do case "$option" in
+        h) opt_help;;
+        p) opt_prefix "$OPTARG";;
+        - ) 
+            case "$OPTARG" in
+                help) opt_help;;
+                prefix=*) opt_prefix "${OPTARG#prefix=}";;
+                * ) config_ensure "unknown long option \"$OPTARG\"" false;;
+            esac;;
+        '?') config_ensure "unknown option \"$OPTARG\"" false;;
+        :) config_ensure "no arg to option \"$OPTARG\"" false;;
+        *) config_ensure "unknown error in $0" false;;
+    esac
+done
+shift $((OPTIND-1))
+
+config_ensure "Prefix was not set" test is-set = "${prefix:+is-set}"
+config_decl_set_prefix "$prefix"
+
+config_decl_set_command_bash
+config_decl_set_file CONFIG_LIB_TEST_HELPER "$prefix/lib/test-helper.bash"
+config_decl_set_file CONFIG_LIB_XSL_EXTENSION "$prefix/lib/xsl/xsl-extension.xsl"
+config_decl_set_command CONFIG_XSDVALID "$prefix/bin/xsdvalid"
+config_decl_set_command CONFIG_SCHEMATRON "$prefix/bin/schematron"
+config_decl_set_command CONFIG_SAXON "$prefix/bin/saxon"
+config_decl_set_file CONFIG_LIB_XSL_FUNCTIONS "$prefix/lib/xsl/xsl-functions.xsl"
+config_decl_set_file CONFIG_LIB_XSL_XHTML_TO_HTML "$prefix/lib/xsl/xhtml-to-html4.01.xsl"
+config_decl_set_command CONFIG_RM rm
+config_decl_set_command CONFIG_M4 m4
+config_decl_set_command CONFIG_CHMOD chmod
+config_decl_set_command CONFIG_DIRNAME dirname
+config_decl_set_command CONFIG_BASENAME basename
+config_decl_set_command CONFIG_INSTALL install
+config_decl_set_command CONFIG_XALAN "$prefix/bin/xalan"
+config_decl_set_file CONFIG_SCRIPT_HELPER "$prefix/lib/script-helper.bash"
+config_decl_set_command CONFIG_CHECK_XML "$prefix/bin/check-xml"
+config_decl_set_command CONFIG_MKTEMP_COMMAND mktemp
+config_decl_set_command CONFIG_MKDIR_COMMAND mkdir
+config_decl_set_command CONFIG_SED_COMMAND gsed sed
+config_decl_set_command CONFIG_HEAD_COMMAND ghead head
+config_decl_set_command CONFIG_REALPATH_COMMAND grealpath realpath
+config_decl_set_command CONFIG_BASE64_COMMAND gbase64 base64
+
+config_decl_set CONFIG_CATALOG_XML "$CONFIG_SHARE_DIR/catalog.xml"
+config_decl_set CONFIG_DOC_SCH "$CONFIG_SHARE_DIR/doc.sch"
+config_decl_set CONFIG_CHECK_DOC_COMMAND "$CONFIG_BIN_DIR/check-doc"
+config_decl_set CONFIG_DOC_SCH "$CONFIG_SHARE_DIR/doc.sch"
+config_decl_set CONFIG_DOC_TO_TEXT_XSL "$CONFIG_SHARE_DIR/doc-to-text.xsl"
+config_decl_set CONFIG_DOC_TO_DEPENDENCIES_XSL "$CONFIG_SHARE_DIR/doc-to-dependencies.xsl"
+config_decl_set CONFIG_COMMON_XSL "$CONFIG_SHARE_DIR/common.xsl"
+config_decl_set CONFIG_DOC_TO_SCHEMATRON_XSL "$CONFIG_SHARE_DIR/doc-to-schematron.xsl"
+
+config_decl_set CONFIG_PRODUCTS "Makefile reconfigure $CONFIG_DECLS_M4 postinstall"
+
+rm -f Makefile
+m4 -P "$CONFIG_DECLS_M4" Makefile.in > Makefile
+chmod 400 Makefile
+
+rm -f postinstall
+m4 -P "$CONFIG_DECLS_M4" postinstall.in > postinstall
+chmod 500 postinstall
+    
+rm -f reconfigure
+cat > reconfigure <<EOF
+./configure --prefix="$prefix"
+EOF
+chmod 555 reconfigure
+
