@@ -9,7 +9,7 @@
    xmlns:common="https://iead.ittl.gtri.org/wr24/document/functions/common/2011-10-05-1029"
    exclude-result-prefixes="doc xsl common">
 
-  <xsl:import href="CONFIG_COMMON_XSL"/>
+  <xsl:import href="common.xsl"/>
 
   <xsl:namespace-alias stylesheet-prefix="xsl-out" result-prefix="xsl"/>
 

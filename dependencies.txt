@@ -1,5 +1,0 @@
-lib-helpers
-lib-xsl
-bin-xsdvalid
-bin-schematron
-xalan

@@ -88,9 +88,9 @@
     <text>: </text>
     <value-of select="$source-file"/>
     <text>&#10;</text>
-    <text>&#9;CONFIG_RM -f $@&#10;</text>
-    <text>&#9;CONFIG_MKDIR_COMMAND -p $(dir $@)&#10;</text>
-    <text>&#9;CONFIG_SED_COMMAND -e '</text>
+    <text>&#9;$(RM) -f $@&#10;</text>
+    <text>&#9;$(MKDIR_P) $(dir $@)&#10;</text>
+    <text>&#9;$(SED) -e '</text>
     <for-each select="text()[1]">
       <value-of select="NodeInfo:lineNumber()"/>
     </for-each>
@@ -98,7 +98,7 @@
     <for-each select="text()[last()]">
       <value-of select="NodeInfo:lineNumber() - 1"/>
     </for-each>
-    <text>p;d' $&lt; | CONFIG_HEAD_COMMAND -c -1 > $@&#10;&#10;</text>
+    <text>p;d' $&lt; | $(head) -c -1 > $@&#10;&#10;</text>
   </template>
 
   <template match="doc:image">
@@ -108,8 +108,8 @@
     <text>: </text>
     <value-of select="concat($source-dir, '/', @src)"/>
     <text>&#10;</text>
-    <text>&#9;'CONFIG_MKDIR_COMMAND' -p $(dir $@)&#10;</text>
-    <text>&#9;'CONFIG_BASE64_COMMAND' --wrap=0 $&lt; &gt; $@&#10;&#10;</text>
+    <text>&#9;'$(MKDIR_P) $(dir $@)&#10;</text>
+    <text>&#9;'($(base64) --wrap=0 $&lt; &gt; $@&#10;&#10;</text>
   </template>
 
   <template match="text()"/>

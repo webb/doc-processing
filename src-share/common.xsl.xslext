@@ -14,7 +14,7 @@
                  schema-location="doc.xsd" />
   -->
 
-  <include href="../../lib/xsl/xsl-functions.xsl"/>
+  <include href="xsl-functions.xsl"/>
 
   <template match="text()[string-length(normalize-space(.)) = 0]"/>
 

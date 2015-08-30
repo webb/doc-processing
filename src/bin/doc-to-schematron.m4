@@ -1,17 +1,14 @@
-#!CONFIG_BASH_COMMAND
+#!/usr/bin/env bash
 
-#HELP:doc-to-schematron: generate a Schematron document from a doc
-#HELP:Usage:
-#HELP:    doc-to-schematron options* file.doc
+root_dir=$(dirname "$0")/..
+. "$root_dir"/MACRO_OPT_HELP_BASH
+. "$root_dir"/MACRO_OPT_VERBOSE_BASH
+. "$root_dir"/MACRO_FAIL_BASH
+
+#HELP:COMMAND_NAME: generate a Schematron document from a doc
+#HELP:Usage: COMMAND_NAME options* file.doc
 #HELP:Options:
-
-. 'CONFIG_SCRIPT_HELPER'
-
-#HELP:    --help | -h: print this help
-opt_help () {
-    print_help
-    exit 0
-}
+#HELP:    --help | -h: Print this help
 
 #HELP:    --out=$file | -o $file: send output to Schematron file $file
 unset out_path
@@ -62,5 +59,4 @@ shift $((OPTIND-1))
 [[ -f "$1" ]] || fail "argument must be file: $1"
 [[ -r "$1" ]] || fail "argument must be readable: $1"
 
-'CONFIG_SAXON' -l:on -in "$1" -out "$out_path" -xsl 'CONFIG_DOC_TO_SCHEMATRON_XSL' - blurb-set="$blurb_set_id" title="$title"
-
+saxon --in="$1" --out="$out_path" --xsl='MACRO_SHARE_DIR_REL'/doc-to-schematron.xsl -- -l:on blurb-set="$blurb_set_id" title="$title"
