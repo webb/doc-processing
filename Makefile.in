@@ -1,6 +1,8 @@
 
 SHELL = @bash@
 
+.SECONDARY:
+
 PACKAGE_NAME = @PACKAGE_NAME@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 dist_name = $(PACKAGE_NAME)-$(PACKAGE_VERSION)
@@ -20,23 +22,33 @@ all_dir = tmp/all
 share_dir_name = $(PACKAGE_NAME)
 share_dir_rel = share/$(share_dir_name)
 share_dir = $(all_dir)/$(share_dir_rel)
-all_files = \
-	$(all_dir)/.stow-local-ignore \
-	$(all_dir)/bin/check-doc \
-	$(all_dir)/bin/doc-to-schematron \
-	$(all_dir)/bin/process-doc \
-	$(share_dir)/xml-catalog.xml \
-	$(share_dir)/common.xsl \
-	$(share_dir)/doc-to-dependencies.xsl \
-	$(share_dir)/doc-to-schematron.xsl \
-	$(share_dir)/doc-to-text.xsl \
-	$(share_dir)/doc-to-xhtml.xsl \
-	$(share_dir)/doc.css \
-	$(share_dir)/doc.sch \
-	$(share_dir)/doc.xsd \
-	$(share_dir)/extract-xml-blurbs.xsl \
-	$(share_dir)/xhtml-to-html4.01.xsl \
-	$(share_dir)/xsl-functions.xsl \
+
+src_files := $(shell find src -type f ! -name '*~' ! -name '\#*' -print)
+
+step_files := ${src_files}
+gen_files :=
+
+step_before_files := ${filter %.m4,${step_files}}
+step_after_files := ${step_before_files:%.m4=%}
+gen_files += ${step_after_files}
+step_files := ${filter-out %.m4,${step_files}} ${step_after_files}
+
+step_before_files := ${filter %.xslext,${step_files}}
+step_after_files := ${step_before_files:%.xslext=%}
+gen_files += ${step_after_files}
+step_files := ${filter-out %.xslext,${step_files}} ${step_after_files}
+
+step_before_files := ${filter src/share/%,${step_files}}
+step_after_files := ${step_before_files:src/share/%=src/${share_dir_rel}/%}
+gen_files += ${step_after_files}
+step_files := ${filter-out src/share/%,${step_files}} ${step_after_files}
+
+step_before_files := ${filter src/%,${step_files}}
+step_after_files := ${step_before_files:src/%=${all_dir}/%}
+gen_files += ${step_after_files}
+step_files := ${filter-out src/%,${step_files}} ${step_after_files}
+
+all_files = ${step_files}
 
 install_files = $(all_files:$(all_dir)/%=$(prefix)/%)
 
@@ -63,26 +75,21 @@ help:
 .PHONY: all # Build all the usual suspects (the default target)
 all: $(all_files)
 
-$(all_dir)/bin/%: src/bin/%.m4 macros.m4 Makefile
-	$(MKDIR_P) $(dir $@)
-	$(run_m4) macros.m4 $< > $@
-	$(chmod) 755 $@
-
-$(all_dir)/%: src/%
+${all_dir}/${share_dir_rel}/%: src/share/%
 	$(MKDIR_P) $(dir $@)
 	$(INSTALL) $< $@
 
-$(share_dir)/%: src-share/%.xslext
+${all_dir}/%: src/%
+	${MKDIR_P} ${dir $@}
+	${INSTALL} $< $@
+
+${all_dir}/%: ${all_dir}/%.m4 macros.m4 Makefile
+	$(MKDIR_P) $(dir $@)
+	$(run_m4) macros.m4 $< > $@
+
+${all_dir}/%: ${all_dir}/%.xslext xsl-extension.xsl
 	$(MKDIR_P) $(dir $@)
 	$(saxon) --in=$< --out=$@ --xsl=xsl-extension.xsl
-
-$(share_dir)/%: src-share/%.m4 macros.m4 Makefile
-	$(MKDIR_P) $(dir $@)
-	$(run_m4) macros.m4 $< > $@
-
-$(share_dir)/%: src-share/%
-	$(MKDIR_P) $(dir $@)
-	$(INSTALL) $< $@
 
 #############################################################################
 # install
@@ -90,12 +97,15 @@ $(share_dir)/%: src-share/%
 .PHONY: install # put files into installation directory
 install: $(install_files)
 
+$(prefix)/bin/%: $(all_dir)/bin/%
+	$(MKDIR_P) $(dir $@)
+	$(INSTALL) -m 755 $< $@
+
 $(prefix)/%: $(all_dir)/%
 	$(MKDIR_P) $(dir $@)
-	if [[ -x $< ]]; \
-	then $(INSTALL) -m 755 $< $@; \
-	else $(INSTALL) -m 644 $< $@; \
-	fi
+	$(INSTALL) -m 644 $< $@
+
+#############################################################################
 
 .PHONY: uninstall # Remove files from installation directory
 uninstall:
