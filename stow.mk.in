@@ -34,8 +34,8 @@ help:
 .PHONY: all # uninstall and reinstall everything
 all: unstow uninstall install stow
 
-.PHONY: rm # unlink & remove the package from the stow pile
-rm: unstow uninstall
+.PHONY: clean # unlink & remove the package from the stow pile
+clean: unstow uninstall
 
 .PHONY: unstow # unlink the package
 unstow:
