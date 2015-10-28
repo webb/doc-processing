@@ -179,11 +179,14 @@
   </element>
   
   <element name="textAbstract" abstract="true"/>
+
   <element name="code" substitutionGroup="doc:textAbstract" type="doc:textType"/>
-  <element name="var" substitutionGroup="doc:textAbstract" type="doc:textType"/>
   <element name="em" substitutionGroup="doc:textAbstract" type="doc:textType"/>
-  <element name="strong" substitutionGroup="doc:textAbstract" type="doc:textType"/>
   <element name="q" substitutionGroup="doc:textAbstract" type="doc:textType"/>
+  <element name="strong" substitutionGroup="doc:textAbstract" type="doc:textType"/>
+  <element name="termDef" substitutionGroup="doc:textAbstract" type="doc:textType"/>
+  <element name="var" substitutionGroup="doc:textAbstract" type="doc:textType"/>
+  
   <element name="qName" substitutionGroup="doc:textAbstract" type="QName">
     <annotation><documentation
     >Use as a surrounding block for QNames / qualified names, to ensure that namespace prefixes are bound, and that formatting is consistent across the document.</documentation></annotation>

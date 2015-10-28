@@ -257,11 +257,13 @@
 
   <template match="doc:indexOfDefinitions">
     <h:ul>
-      <for-each select="//doc:definition">
-        <sort select="lower-case(@term)"> </sort>
+      <for-each select="//doc:definition|//doc:termDef">
+        <sort select="lower-case(normalize-space(if (exists(@term)) then @term else .))"> </sort>
+        <variable name="term" as="xs:string"
+                  select="normalize-space(if (exists(@term)) then @term else .)"/>
         <h:li>
           <h:a href="#{this:get-id(.)}">
-            <value-of select="@term"/>
+            <value-of select="$term"/>
           </h:a>: <apply-templates select="ancestor::doc:section[1]" mode="get-reference"/>
         </h:li>
       </for-each>
@@ -721,6 +723,13 @@
       </h:a>
     </template>
 
+    <template match="doc:termDef" mode="text">
+      <h:a name="{this:get-id(.)}"/>
+      <h:dfn>
+        <apply-templates mode="text"/>
+      </h:dfn>
+    </template>
+      
     <template match="doc:conformance-target" mode="text">
       <h:a name="{this:get-id(.)}"/>
       <apply-templates mode="text"/>
@@ -865,6 +874,13 @@
     <template match="doc:definition" mode="get-id">
       <value-of select="concat('definition_', 
                                replace(replace(normalize-space(@term), ' ', '_'),
+                                       '[^-_A-Za-z0-9\.]', ''))"/>
+    </template>
+
+    <template match="doc:termDef" mode="get-id">
+      <value-of select="concat('definition_', 
+                               replace(replace(normalize-space(.),
+                                               ' ', '_'),
                                        '[^-_A-Za-z0-9\.]', ''))"/>
     </template>
 

@@ -49,9 +49,42 @@
     <let name="term" value="normalize-space(if (exists(@term)) 
                                               then string(@term)
                                               else string(.))"/>
-    <let name="termCount" value="count(//doc:definition[normalize-space(@term) = $term])"/>
-    <assert test="$termCount = 1"
-            >There must exist exactly one doc:definition for every doc:termRef. (Term is &quot;<value-of select="$term"/>&quot;; found <value-of select="$termCount"/> occurrences)</assert>
+    <assert test="string-length($term) &gt; 0"
+            >A termRef must have a non-empty term.</assert>
+    <let name="definitions"
+         value="//doc:definition[normalize-space(@term) = $term],
+                //doc:termDef[$term = normalize-space(.)]"/>
+    <let name="definition-count" value="count( $definitions )"/>
+    <assert test="$definition-count = 1"
+            >There must exist exactly one definition (doc:definition or doc:termDef) for every doc:termRef. (Term is &quot;<value-of select="$term"/>&quot;; found <value-of select="$definition-count"/> occurrences)</assert>
+  </rule>
+</pattern>
+
+<pattern>
+  <rule context="doc:termDef">
+    <let name="term" value="normalize-space(.)"/>
+    <assert test="string-length($term) &gt; 0"
+            >A termDef must have a non-empty term.</assert>
+    <let name="definitions"
+         value="//doc:definition[normalize-space(@term) = $term],
+                //doc:termDef[$term = normalize-space(.)]"/>
+    <let name="definition-count" value="count( $definitions )"/>
+    <assert test="$definition-count = 1"
+            >There must exist exactly one definition (doc:definition or doc:termDef) for every defined term. (Term is &quot;<value-of select="$term"/>&quot;; found <value-of select="$definition-count"/> definitions)</assert>
+  </rule>
+</pattern>
+
+<pattern>
+  <rule context="doc:definition">
+    <let name="term" value="normalize-space(@term)"/>
+    <assert test="string-length($term) &gt; 0"
+            >A definition must have a non-empty term.</assert>
+    <let name="definitions"
+         value="//doc:definition[normalize-space(@term) = $term],
+                //doc:termDef[$term = normalize-space(.)]"/>
+    <let name="definition-count" value="count( $definitions )"/>
+    <assert test="$definition-count = 1"
+            >There must exist exactly one definition (doc:definition or doc:termDef) for every defined term. (Term is &quot;<value-of select="$term"/>&quot;; found <value-of select="$definition-count"/> definitions)</assert>
   </rule>
 </pattern>
 
@@ -59,15 +92,6 @@
   <rule context="doc:ruleSection">
     <assert test="count(doc:rule) = 1"
             >A ruleSection MUST have 1 child element rule.</assert>
-  </rule>
-</pattern>
-
-<pattern>
-  <rule context="doc:definition">
-    <let name="term" value="@term"/>
-    <let name="termCount" value="count(//doc:definition[@term = $term])"/>
-    <assert test="$termCount = 1"
-            >There must exist exactly one doc:definition with a given term. (Term is &quot;<value-of select="$term"/>; found <value-of select="$termCount"/> occurrences)</assert>
   </rule>
 </pattern>
 
@@ -102,7 +126,6 @@
             >doc:reference must have a first child element doc:p.</assert>
   </rule>
 </pattern>
-
 
 </schema>
 <!-- 

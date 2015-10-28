@@ -116,7 +116,8 @@ div.normativeHead {
     margin-bottom: 1em;
 }
 dfn {
-    font-style: normal; 
+    font-style: normal;
+    font-weight: bold;
 }
 div.sub {
     margin-left: INDENT1;

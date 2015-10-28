@@ -326,6 +326,10 @@
 
   <xe:mode mode="text">
 
+    <template match="doc:termDef" mode="text">
+      <apply-templates mode="text"/>
+    </template>
+
     <template match="doc:termRef" mode="text">
       <text>[</text>
       <apply-templates mode="text"/>
