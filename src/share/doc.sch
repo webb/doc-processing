@@ -103,6 +103,8 @@
 
 <pattern>
   <rule context="doc:qName[empty(ancestor::doc:comment)]">
+    <assert test="contains(., ':')"
+            >A qName must contain a &quot;:&quot;.</assert>
     <assert test="not(xs:anyURI('https://iead.ittl.gtri.org/wr24/doc/2011-09-30-2258') 
                       = namespace-uri-from-QName(
                           resolve-QName(string-join(text(), ''), .)))"
