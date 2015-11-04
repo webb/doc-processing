@@ -711,8 +711,10 @@
     <template match="doc:termRef" mode="text">
       <variable name="term" as="xs:string" 
                 select="normalize-space(string(if (exists(@term)) then @term else .))"/>
-      <variable name="definition" as="element(doc:definition)" 
-                select="exactly-one(//doc:definition[normalize-space(@term) = $term])"/>
+      <variable name="definition" as="element()" 
+                select="exactly-one(
+                          //doc:definition[normalize-space(@term) = $term]
+                          | //doc:termDef[normalize-space(.) = $term])"/>
       <variable name="id" as="xs:string" 
                 select="this:get-id($definition)"/>
       <h:a name="{this:get-id(.)}"/>
