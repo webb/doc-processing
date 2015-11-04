@@ -349,7 +349,7 @@
       <apply-templates mode="text"/>
     </template>
 
-    <template match="doc:code | doc:var | doc:qName" mode="text">
+    <template match="doc:code | doc:var | doc:qName | doc:local-name" mode="text">
       <apply-templates mode="text"/>
     </template>
   
