@@ -34,6 +34,12 @@
 </pattern>
 
 <pattern>
+  <rule context="doc:section[@isAppendix = 'true']">
+    <assert test="empty(ancestor::doc:section)">Attribute isAppendix may only appear on a top-level doc:section element</assert>
+  </rule>
+</pattern>
+
+<pattern>
   <rule context="doc:image">
     <assert test="starts-with(@src, 'img/')"
             >doc:image/@src must start with &quot;img/&quot;</assert>

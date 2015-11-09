@@ -279,9 +279,9 @@
 
   <function name="common:section-is-appendix" as="xs:boolean">
     <param name="section" as="element(doc:section)"/>
-    <sequence select="empty($section/ancestor::doc:section)
-                      and ($section/@isAppendix = 'true'
-                           or exists($section/preceding-sibling::doc:section[@isAppendix = 'true']))"/>
+    <sequence select="$section/@isAppendix = 'true'
+                      or $section/ancestor::doc:section[common:section-is-appendix(.)]
+                      or $section/preceding-sibling::doc:section[common:section-is-appendix(.)]"/>
   </function>
 
 </stylesheet>
