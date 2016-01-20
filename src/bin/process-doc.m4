@@ -78,7 +78,7 @@ do
                 verbose ) opt_verbose;;
                 help=* | keep-temps=* | verbose=* | opt_not_paranoid=* )
                     fail "Long option \"${OPTARG%%=*}\" has unexpected argument";;
-                catalog | formt | in | out )
+                catalog | format | in | out )
                     fail "Long option \"$OPTARG\" is missing required argument";;
                 * ) fail "Unknown long option \"${OPTARG%%=*}\"";;
             esac;;
@@ -97,8 +97,8 @@ share_dir=${root_dir}/'MACRO_SHARE_DIR_REL'
 
 if is_paranoid
 then command=(check-doc)
-     for CATALOG_KEY in "${!CATALOGS[@]}"
-     do command+=(--catalog="${CATALOGS[$CATALOG_KEY]}")
+     for CATALOG_KEY in "${!catalog_files[@]}"
+     do command+=(--catalog="${catalog_files[$CATALOG_KEY]}")
      done
      command+=( "$in_file" )
      vrun "${command[@]}" || fail "input file failed check-doc: $in_file"
