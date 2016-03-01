@@ -59,4 +59,4 @@ shift $((OPTIND-1))
 [[ -f "$1" ]] || fail "argument must be file: $1"
 [[ -r "$1" ]] || fail "argument must be readable: $1"
 
-saxon --in="$1" --out="$out_path" --xsl='MACRO_SHARE_DIR_REL'/doc-to-schematron.xsl -- -l:on blurb-set="$blurb_set_id" title="$title"
+saxon --in="$1" --out="$out_path" --xsl="$root_dir"/'MACRO_SHARE_DIR_REL'/doc-to-schematron.xsl -- -l:on blurb-set="$blurb_set_id" title="$title"
