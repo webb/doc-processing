@@ -91,9 +91,7 @@
     <text>&#9;$(RM) -f $@&#10;</text>
     <text>&#9;$(MKDIR_P) $(dir $@)&#10;</text>
     <text>&#9;$(SED) -e '</text>
-    <for-each select="text()[1]">
-      <value-of select="NodeInfo:lineNumber()"/>
-    </for-each>
+    <value-of select="NodeInfo:lineNumber() + 1"/>
     <text>,</text>
     <for-each select="text()[last()]">
       <value-of select="NodeInfo:lineNumber() - 1"/>
