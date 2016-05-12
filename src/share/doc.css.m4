@@ -168,3 +168,12 @@ m4_dnl we want outlines to look like 2. B. ...
 ol ol > li { 
   list-style-type: upper-alpha; 
 }
+li > p {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+p + p {
+  margin-top: 1em;
+}
+div > *:last-child { margin-bottom: 0; }
+blockquote > *:last-child { margin-bottom: 0; }
