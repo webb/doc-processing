@@ -31,20 +31,20 @@
     <variable name="var-include-texts" select="concat($prefix, '_INCLUDE_TEXTS')"/>
 
     <value-of select="concat($prefix, '_HTML_REQUIRED_FILES')"/>
-    <text> = $(</text>
+    <text> = ${</text>
     <value-of select="$var-images-base64"/>
-    <text>) $(</text>
+    <text>} ${</text>
     <value-of select="$var-xml-blurbs-text"/>
-    <text>) $(</text>
+    <text>} ${</text>
     <value-of select="$var-include-texts"/>
-    <text>)&#10;&#10;</text>
+    <text>}&#10;&#10;</text>
 
     <value-of select="concat($prefix, '_TEXT_REQUIRED_FILES')"/>
-    <text> = $(</text>
+    <text> = ${</text>
     <value-of select="$var-xml-blurbs-text"/>
-    <text>) $(</text>
+    <text>} ${</text>
     <value-of select="$var-include-texts"/>
-    <text>)&#10;&#10;</text>
+    <text>}&#10;&#10;</text>
 
     <value-of select="$var-images-base64"/>
     <text> =</text>
@@ -88,15 +88,15 @@
     <text>: </text>
     <value-of select="$source-file"/>
     <text>&#10;</text>
-    <text>&#9;$(RM) -f $@&#10;</text>
-    <text>&#9;$(MKDIR_P) $(dir $@)&#10;</text>
-    <text>&#9;$(SED) -e '</text>
+    <text>&#9;${RM} $@&#10;</text>
+    <text>&#9;${MKDIR_P} ${dir $@}&#10;</text>
+    <text>&#9;${SED} -e '</text>
     <value-of select="NodeInfo:lineNumber() + 1"/>
     <text>,</text>
     <for-each select="text()[last()]">
       <value-of select="NodeInfo:lineNumber() - 1"/>
     </for-each>
-    <text>p;d' $&lt; | $(head) -c -1 > $@&#10;&#10;</text>
+    <text>p;d' $&lt; | ${head} -c -1 > $@&#10;&#10;</text>
   </template>
 
   <template match="doc:image">
@@ -106,8 +106,8 @@
     <text>: </text>
     <value-of select="concat($source-dir, '/', @src)"/>
     <text>&#10;</text>
-    <text>&#9;'$(MKDIR_P) $(dir $@)&#10;</text>
-    <text>&#9;'($(base64) --wrap=0 $&lt; &gt; $@&#10;&#10;</text>
+    <text>&#9;'${MKDIR_P} ${dir $@}&#10;</text>
+    <text>&#9;'(${base64} --wrap=0 $&lt; &gt; $@&#10;&#10;</text>
   </template>
 
   <template match="text()"/>
