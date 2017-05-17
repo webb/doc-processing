@@ -106,8 +106,8 @@
     <text>: </text>
     <value-of select="concat($source-dir, '/', @src)"/>
     <text>&#10;</text>
-    <text>&#9;'${MKDIR_P} ${dir $@}&#10;</text>
-    <text>&#9;'(${base64} --wrap=0 $&lt; &gt; $@&#10;&#10;</text>
+    <text>&#9;${MKDIR_P} ${dir $@}&#10;</text>
+    <text>&#9;${base64} --wrap=0 $&lt; &gt; $@&#10;&#10;</text>
   </template>
 
   <template match="text()"/>
