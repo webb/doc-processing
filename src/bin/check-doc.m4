@@ -63,7 +63,7 @@ error_level=0
 while test $# -gt 0
 do
     if is_paranoid && ! vrun check-xml "$1"
-    then printf "File did not pass XML check: %s" "$1" >&2
+    then printf "File did not pass XML check: %s\n" "$1" >&2
         error_level=1
         break
     fi
@@ -73,7 +73,7 @@ do
     done
     XSDVALID_COMMAND+=( -catalog "$share_dir"/xml-catalog.xml )
     if ! vrun "${XSDVALID_COMMAND[@]}" "$1"
-    then printf "File did not pass doc XML Schema check: $1" >&2
+    then printf "File did not pass doc XML Schema check: $1\n" >&2
         error_level=1
         break
     fi
@@ -81,7 +81,7 @@ do
     then vrun install  --compare --no-target-directory "$share_dir"/doc.sch "$working_dir"/doc.sch
     fi
     if ! vrun schematron --schema="$working_dir"/doc.sch --format=text "$1"
-    then printf "File did not pass doc Schematron check: %s" "$1" >&2
+    then printf "File did not pass doc Schematron check: %s\n" "$1" >&2
          error_level=1
          break
     fi

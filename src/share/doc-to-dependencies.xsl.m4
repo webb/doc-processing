@@ -9,7 +9,7 @@
 
   <param name="source-file">UNSET</param>
   <param name="source-dir">UNSET</param>
-  <param name="prefix">DOC</param>
+  <param name="prefix">doc</param>
 
   <template match="/">
 
@@ -26,11 +26,11 @@
 
     <text>&#10;</text>
 
-    <variable name="var-images-base64" select="concat($prefix, '_IMAGES_BASE64')"/>
-    <variable name="var-xml-blurbs-text" select="concat($prefix, '_XMLBLURBS_TXT')"/>
-    <variable name="var-include-texts" select="concat($prefix, '_INCLUDE_TEXTS')"/>
+    <variable name="var-images-base64" select="concat($prefix, '_images_base64')"/>
+    <variable name="var-xml-blurbs-text" select="concat($prefix, '_xmlblurbs_txt')"/>
+    <variable name="var-include-texts" select="concat($prefix, '_include_texts')"/>
 
-    <value-of select="concat($prefix, '_HTML_REQUIRED_FILES')"/>
+    <value-of select="concat($prefix, '_html_required_files')"/>
     <text> = ${</text>
     <value-of select="$var-images-base64"/>
     <text>} ${</text>
@@ -39,7 +39,7 @@
     <value-of select="$var-include-texts"/>
     <text>}&#10;&#10;</text>
 
-    <value-of select="concat($prefix, '_TEXT_REQUIRED_FILES')"/>
+    <value-of select="concat($prefix, '_text_required_files')"/>
     <text> = ${</text>
     <value-of select="$var-xml-blurbs-text"/>
     <text>} ${</text>
@@ -90,7 +90,7 @@
     <text>&#10;</text>
     <text>&#9;${RM} $@&#10;</text>
     <text>&#9;${MKDIR_P} ${dir $@}&#10;</text>
-    <text>&#9;${SED} -e '</text>
+    <text>&#9;${sed} -e '</text>
     <value-of select="NodeInfo:lineNumber() + 1"/>
     <text>,</text>
     <for-each select="text()[last()]">
