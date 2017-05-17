@@ -20,7 +20,6 @@
           standalone="yes"/>
 
   <xsl:param name="blurb-set" required="yes"/>
-  <xsl:param name="title" required="yes"/>
 
   <xsl:template match="/">
     <xsl:if test="empty(doc:document)">
@@ -30,10 +29,6 @@
       <xsl:message terminate="yes">Blurb set &quot;<xsl:value-of select="$blurb-set"/>&quot; not found</xsl:message>
     </xsl:if>
     <sch:schema queryBinding="xslt2">
-      <sch:title><xsl:value-of select="$title"/></sch:title>
-      <!-- put includes here, if necessary. files to include could be brought in via a variable if needed
-      <xsl-out:include href="ndr-functions.xsl"/>
-      -->
       <xsl:apply-templates select="//doc:xmlBlurb[
                                    $blurb-set = tokenize(normalize-space(@memberOf), ' ')
                                ]/node()"/>
@@ -77,7 +72,7 @@
   </xsl:template>
 
   <!-- text things we might find in rule titles -->
-  <xsl:template match="doc:code|doc:qName" mode="text">
+  <xsl:template match="doc:code|doc:qName|doc:local-name" mode="text">
     <xsl:apply-templates select="node()" mode="text"/>
   </xsl:template>
 
@@ -97,7 +92,7 @@
   </xsl:template>
 
   <xsl:template match="@*|node()" priority="-1" mode="text">
-    <xsl:message terminate="yes">Found unknown node: <xsl:value-of select="node-name(.)"/></xsl:message>
+    <xsl:message terminate="yes">Found unknown node (mode=text): <xsl:value-of select="node-name(.)"/></xsl:message>
   </xsl:template>
 
 </xsl:stylesheet>
