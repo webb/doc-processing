@@ -23,10 +23,8 @@
         dodging the title every time. -->
   <template match="doc:title"/>
 
-  <!-- comments do not show up in results, but a message is written -->
+  <!-- comments do not show up in results -->
   <template match="doc:comment">
-    <!-- print message on comment -->
-    <message><value-of select="f:get-location(.)"/>:comment</message>
   </template>
 
   <!-- comments get eaten -->
