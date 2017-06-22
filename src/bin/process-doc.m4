@@ -48,10 +48,11 @@ out_format=html
 #HELP:      formats: html: rendered HTML output
 #HELP:               text: diff-quality text output
 #HELP:               makedepend: Makefile dependencies
+#HELP:               rules-id-map: XML file mapping rule numbers to descriptive IDs
 opt_format () {
     [[ $# = 1 ]] || fail_assert "$FUNCNAME expected 1 args, got $#"
     case "$1" in
-        html | text | makedepend ) out_format="$1";;
+        html | text | makedepend | rules-id-map ) out_format="$1";;
         * ) fail "Unexpected format \"$1\"; expected html or text";;
     esac
 }
@@ -109,6 +110,10 @@ case $out_format in
         vrun saxon --in="$in_file" \
              --out="$out_file" \
              --xsl="$share_dir"/doc-to-text.xsl ;;
+    rules-id-map )
+        vrun saxon --in="$in_file" \
+             --out="$out_file" \
+             --xsl="$share_dir"/get-rules-id-map.xsl ;;
     html )
         temp_make_dir working_dir
         xhtml_file=$working_dir/$(basename "$in_file").xhtml
