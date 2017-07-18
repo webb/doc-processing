@@ -373,7 +373,7 @@
           <text>a</text>
         </when>
         <when test="@name='ccedil'">
-          <text>a</text>
+          <text>c</text>
         </when>
         <when test="@name='eacute'">
           <text>e</text>
