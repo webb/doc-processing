@@ -291,7 +291,7 @@
     <text>: </text>
     <apply-templates select="doc:p[1]/node()" mode="text"/>
     <text>&#10;&#10;</text>
-    <apply-templates select="doc:p[position() != 1]">
+    <apply-templates select="*[position() != 1]">
       <with-param name="indent" select="$indent + $indent-size" tunnel="yes"/>
     </apply-templates>
   </template>
