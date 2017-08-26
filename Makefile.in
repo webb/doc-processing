@@ -1,123 +1,107 @@
+#############################################################################
+# Don't touch these...
+#############################################################################
 
-SHELL = @bash@
-
+this_makefile := ${lastword ${MAKEFILE_LIST}}
+SHELL = @bash@ -o pipefail -o errexit -o nounset
 .SECONDARY:
 
-PACKAGE_NAME = @PACKAGE_NAME@
-PACKAGE_VERSION = @PACKAGE_VERSION@
-dist_name = $(PACKAGE_NAME)-$(PACKAGE_VERSION)
+#############################################################################
+# things to set / override
+#############################################################################
+
+#HELP:Default prefix is "@prefix@"; srcdir is "@srcdir@"
 
 prefix = @prefix@
+srcdir = @srcdir@
+builddir = @builddir@
 
+## programs
+# autoconf
+INSTALL = @INSTALL@
+INSTALL_PROGRAM = @INSTALL_PROGRAM@
+INSTALL_SCRIPT = @INSTALL_SCRIPT@
+INSTALL_DATA = @INSTALL_DATA@
+MKDIR_P = @MKDIR_P@
+SED = @SED@
+# unix
 bash = @bash@
 chmod = @chmod@
 m4 = @m4@
+# webb stuff
 saxon = @saxon@
+schematron_compile = @schematron_compile@
 
-INSTALL = @INSTALL@
-MKDIR_P = @MKDIR_P@
-SED = @SED@
+#HELP:Default target is "all". Targets include:
+.DEFAULT_GOAL: all
 
-all_dir = tmp/all
-share_dir_name = $(PACKAGE_NAME)
-share_dir_rel = share/$(share_dir_name)
-share_dir = $(all_dir)/$(share_dir_rel)
+## files
+files_src := ${shell find ${srcdir}/src -type f ! -name '*~' ! -name '\#*\#'}
+files_src := ${files_src:%.m4=%}
+files_src := ${files_src:%.xslext=%}
+files_src := ${files_src} ${patsubst %.sch,%.sch.xsl,${filter %.sch,${files_src}}}
+files = ${files_src:${srcdir}/src/%=%}
 
-src_files := $(shell find src -type f ! -name '*~' ! -name '\#*' -print)
+all_files = ${files:%=${builddir}/build/%}
+install_files = ${files:%=${prefix}/%}
 
-step_files := ${src_files}
-gen_files :=
-
-step_before_files := ${filter %.m4,${step_files}}
-step_after_files := ${step_before_files:%.m4=%}
-gen_files += ${step_after_files}
-step_files := ${filter-out %.m4,${step_files}} ${step_after_files}
-
-step_before_files := ${filter %.xslext,${step_files}}
-step_after_files := ${step_before_files:%.xslext=%}
-gen_files += ${step_after_files}
-step_files := ${filter-out %.xslext,${step_files}} ${step_after_files}
-
-step_before_files := ${filter src/share/%,${step_files}}
-step_after_files := ${step_before_files:src/share/%=src/${share_dir_rel}/%}
-gen_files += ${step_after_files}
-step_files := ${filter-out src/share/%,${step_files}} ${step_after_files}
-
-step_before_files := ${filter src/%,${step_files}}
-step_after_files := ${step_before_files:src/%=${all_dir}/%}
-gen_files += ${step_after_files}
-step_files := ${filter-out src/%,${step_files}} ${step_after_files}
-
-all_files = ${step_files}
-
-install_files = $(all_files:$(all_dir)/%=$(prefix)/%)
-
-run_m4 = $(m4) -P \
-	-D MACRO_BASH_COMMAND=$(bash) \
-	-D MACRO_OPT_HELP_BASH=@opt_help_bash@ \
-	-D MACRO_OPT_VERBOSE_BASH=@opt_verbose_bash@ \
-	-D MACRO_FAIL_BASH=@fail_bash@ \
-	-D MACRO_PARANOIA_BASH=@paranoia_bash@ \
-	-D MACRO_TEMP_BASH=@temp_bash@ \
-	-D MACRO_SHARE_DIR_REL=$(share_dir_rel) \
-
-.PHONY: default
-default: all
-
-.PHONY: help # Print this help
-help:
-	@ echo Available targets:
-	@ $(SED) -e 's/^.PHONY: *\([^ #]*\) *\# *\(.*\)$$/  \1: \2/p;d' Makefile
+m4_flags = --prefix-builtins ${srcdir}/macros.m4
 
 #############################################################################
 # all
 
-.PHONY: all # Build all the usual suspects (the default target)
-all: $(all_files)
+.PHONY: all #   Build all the usual suspects (the default target)
+all: ${all_files}
 
-${all_dir}/${share_dir_rel}/%: src/share/%
-	$(MKDIR_P) $(dir $@)
-	$(INSTALL) $< $@
+${builddir}/build/%: ${builddir}/build/%.m4
+	@ ${MKDIR_P} ${dir $@}
+	${m4} ${m4_flags} $< > $@
+	! grep MACRO_ $@
 
-${all_dir}/%: src/%
-	${MKDIR_P} ${dir $@}
-	${INSTALL} $< $@
+${builddir}/build/%.xsl: ${builddir}/build/%.xsl.xslext ${srcdir}/xsl-extension.xsl
+	@ ${MKDIR_P} ${dir $@}
+	${saxon} --in=$< --out=$@ --xsl=${srcdir}/xsl-extension.xsl
 
-${all_dir}/%: ${all_dir}/%.m4 macros.m4 Makefile
-	$(MKDIR_P) $(dir $@)
-	$(run_m4) macros.m4 $< > $@
+${builddir}/build/%.sch.xsl: ${builddir}/build/%.sch
+	@ ${MKDIR_P} ${dir $@}
+	${schematron_compile} --output-file=$@ $<
 
-${all_dir}/%: ${all_dir}/%.xslext xsl-extension.xsl
-	$(MKDIR_P) $(dir $@)
-	$(saxon) --in=$< --out=$@ --xsl=xsl-extension.xsl
+# import from source
+${builddir}/build/%: ${srcdir}/src/%
+	@ ${MKDIR_P} ${dir $@}
+	${INSTALL_DATA} $< $@
 
 #############################################################################
 # install
 
-.PHONY: install # put files into installation directory
-install: $(install_files)
+.PHONY: install #   put files into installation directory
+install: ${install_files}
 
-$(prefix)/bin/%: $(all_dir)/bin/%
-	$(MKDIR_P) $(dir $@)
-	$(INSTALL) -m 755 $< $@
+${prefix}/bin/%: ${builddir}/build/bin/%
+	@ ${MKDIR_P} ${dir $@}
+	${INSTALL_PROGRAM} $< $@
 
-$(prefix)/%: $(all_dir)/%
-	$(MKDIR_P) $(dir $@)
-	$(INSTALL) -m 644 $< $@
+${prefix}/%: ${builddir}/build/%
+	${MKDIR_P} ${dir $@}
+	${INSTALL_DATA} $< $@
 
 #############################################################################
 
-.PHONY: uninstall # Remove files from installation directory
+.PHONY: uninstall #   Remove files from installation directory
 uninstall:
-	$(RM) $(install_files)
+	${RM} ${install_files}
 
 #############################################################################
-# clean
 
-.PHONY: clean # Remove make products
+.PHONY: clean #   Remove make products
 clean:
-	$(RM) -r tmp
+	${RM} -r ${builddir}/build
 
-.PHONY: distclean # Remove configure products
-distclean: clean
-	$(RM) Makefile autom4te.cache config.log config.status 
+#############################################################################
+# make this the last target
+
+.PHONY: help #   Print this help
+help:
+	@ ${SED} -e '/^\.PHONY:/s/^\.PHONY: *\([^ #]*\) *\#\( *\)\([^ ].*\)/\2\1: \3/p;/^[^#]*#HELP:/s/[^#]*#HELP:\(.*\)/\1/p;d' ${this_makefile}
+
+# don't put anything after this

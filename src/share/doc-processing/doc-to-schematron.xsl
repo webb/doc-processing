@@ -96,11 +96,3 @@
   </xsl:template>
 
 </xsl:stylesheet>
-<!-- 
-  Local Variables:
-  mode: sgml
-  indent-tabs-mode: nil
-  fill-column: 9999
-  End:
--->
-

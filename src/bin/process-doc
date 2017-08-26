@@ -3,11 +3,13 @@
 set -o errexit -o nounset -o pipefail
 
 root_dir=$(dirname "$0")/..
-. "$root_dir"/MACRO_OPT_HELP_BASH
-. "$root_dir"/MACRO_OPT_VERBOSE_BASH
-. "$root_dir"/MACRO_FAIL_BASH
-. "$root_dir"/MACRO_PARANOIA_BASH
-. "$root_dir"/MACRO_TEMP_BASH
+. "$root_dir"/share/wrtools-core/opt_help.bash
+. "$root_dir"/share/wrtools-core/opt_verbose.bash
+. "$root_dir"/share/wrtools-core/fail.bash
+. "$root_dir"/share/wrtools-core/paranoia.bash
+. "$root_dir"/share/wrtools-core/temp.bash
+
+share_dir="$root_dir"/share/doc-processing
 
 #HELP:COMMAND_NAME: convert an XML document format into a rendered document
 #HELP:Usage:
@@ -93,9 +95,6 @@ shift $((OPTIND-1))
 [[ is-set = ${in_file+is-set} ]] || fail "Option --in is required"
 [[ is-set = ${out_file+is-set} ]] || fail "Option --out is required"
 
-share_dir=${root_dir}/'MACRO_SHARE_DIR_REL'
-! is_paranoid || [[ -d $share_dir ]] || fail_assert "share directory not found: $share_dir"
-
 if is_paranoid
 then command=(check-doc)
      for CATALOG_KEY in "${!catalog_files[@]}"
@@ -132,8 +131,3 @@ case $out_format in
               --out="$out_file" -- -L;;
     * ) fail_assert "unknown output format: $out_format";;
 esac
-m4_dnl Local Variables:
-m4_dnl mode: shell-script
-m4_dnl indent-tabs-mode: nil
-m4_dnl fill-column: 9999
-m4_dnl End:

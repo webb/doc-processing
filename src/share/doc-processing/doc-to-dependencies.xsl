@@ -90,7 +90,7 @@
     <text>&#10;</text>
     <text>&#9;${RM} $@&#10;</text>
     <text>&#9;${MKDIR_P} ${dir $@}&#10;</text>
-    <text>&#9;${sed} -e '</text>
+    <text>&#9;${SED} -e '</text>
     <value-of select="NodeInfo:lineNumber() + 1"/>
     <text>,</text>
     <for-each select="text()[last()]">
@@ -123,10 +123,3 @@
   </template>
 
 </stylesheet>
-<!-- 
-  Local Variables:
-  mode: sgml
-  indent-tabs-mode: nil
-  fill-column: 9999
-  End:
--->

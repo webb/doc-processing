@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 
 root_dir=$(dirname "$0")/..
-. "$root_dir"/MACRO_OPT_HELP_BASH
-. "$root_dir"/MACRO_OPT_VERBOSE_BASH
-. "$root_dir"/MACRO_FAIL_BASH
-. "$root_dir"/MACRO_PARANOIA_BASH
-. "$root_dir"/MACRO_TEMP_BASH
+. "$root_dir"/share/wrtools-core/opt_help.bash
+. "$root_dir"/share/wrtools-core/opt_verbose.bash
+. "$root_dir"/share/wrtools-core/fail.bash
+. "$root_dir"/share/wrtools-core/paranoia.bash
 
+share_dir="$root_dir"/share/doc-processing
 
 #HELP:COMMAND_NAME: Validate a file as being a valid doc
 #HELP:Options:
@@ -15,7 +15,7 @@ root_dir=$(dirname "$0")/..
 #HELP:  --verbose, -v: Print additional diagnostics
 #HELP:  --not-paranoid: Omit basic/foundational validations
 
-#HELP:  --catalog=$xml-catalog.xml | -c $xml-catalog.xml: add an XML catalog for schema validation
+#HELP:  --catalog=$xml-catalog.xml | -c $xml-catalog.xml: Add an XML catalog for schema validation
 CATALOGS=()
 opt_catalog () {
     [[ $# = 1 ]] || fail_assert "$FUNCNAME expected 1 arg, got $#"
@@ -54,11 +54,6 @@ then warn "not doing anything because no files were listed"
      exit 0
 fi
 
-share_dir=$root_dir/'MACRO_SHARE_DIR_REL'
-! is_paranoid || [[ -d $share_dir ]] || fail "share directory not found: $share_dir"
-
-temp_make_dir working_dir
-
 error_level=0
 while test $# -gt 0
 do
@@ -67,20 +62,17 @@ do
         error_level=1
         break
     fi
-    XSDVALID_COMMAND=( xsdvalid )
+    XSDVALID_COMMAND=( xs-validate )
     for CATALOG_KEY in "${!CATALOGS[@]}"
-    do XSDVALID_COMMAND+=( -catalog "${CATALOGS[$CATALOG_KEY]}" )
+    do XSDVALID_COMMAND+=( --catalog="${CATALOGS[$CATALOG_KEY]}" )
     done
-    XSDVALID_COMMAND+=( -catalog "$share_dir"/xml-catalog.xml )
+    XSDVALID_COMMAND+=( --catalog="$share_dir"/xml-catalog.xml )
     if ! vrun "${XSDVALID_COMMAND[@]}" "$1"
     then printf "File did not pass doc XML Schema check: $1\n" >&2
         error_level=1
         break
     fi
-    if [[ ! -f $working_dir/doc.sch ]]
-    then vrun install  --compare --no-target-directory "$share_dir"/doc.sch "$working_dir"/doc.sch
-    fi
-    if ! vrun schematron --schema="$working_dir"/doc.sch --format=text "$1"
+    if ! vrun schematron-execute --xslt-file="$share_dir"/doc.sch.xsl --format=text "$1"
     then printf "File did not pass doc Schematron check: %s\n" "$1" >&2
          error_level=1
          break
@@ -89,11 +81,3 @@ do
 done
 
 exit "$error_level"
-
-m4_dnl Local Variables:
-m4_dnl mode: shell-script
-m4_dnl eval: (sh-set-shell "bash")
-m4_dnl indent-tabs-mode: nil
-m4_dnl fill-column: 9999
-m4_dnl End:
-

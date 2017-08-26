@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 
 root_dir=$(dirname "$0")/..
-. "$root_dir"/MACRO_OPT_HELP_BASH
-. "$root_dir"/MACRO_OPT_VERBOSE_BASH
-. "$root_dir"/MACRO_FAIL_BASH
+. "$root_dir"/share/wrtools-core/opt_help.bash
+. "$root_dir"/share/wrtools-core/opt_verbose.bash
+. "$root_dir"/share/wrtools-core/fail.bash
+
+share_dir="$root_dir"/share/doc-processing
 
 #HELP:COMMAND_NAME: generate a Schematron document from a doc
 #HELP:Usage: COMMAND_NAME options* file.doc
@@ -59,4 +61,4 @@ shift $((OPTIND-1))
 [[ -f "$1" ]] || fail "argument must be file: $1"
 [[ -r "$1" ]] || fail "argument must be readable: $1"
 
-saxon --in="$1" --out="$out_path" --xsl="$root_dir"/'MACRO_SHARE_DIR_REL'/doc-to-schematron.xsl -- -l:on blurb-set="$blurb_set_id" title="$title"
+saxon --in="$1" --out="$out_path" --xsl="$share_dir"/doc-to-schematron.xsl -- -l:on blurb-set="$blurb_set_id" title="$title"
