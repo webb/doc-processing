@@ -120,6 +120,7 @@ dfn {
     font-weight: bold;
 }
 div.sub {
+    margin-top: 1em;
     margin-left: INDENT1;
 }
 div.sub > *:last-child {
