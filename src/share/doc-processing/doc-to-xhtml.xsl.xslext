@@ -779,6 +779,9 @@
         <when test="@name='ocirc'">
           <text>&#244;</text>
         </when>
+        <when test="@name='ouml'">
+          <text>&#246;</text>
+        </when>
         <when test="@name='rarr'">
           <text>&#8594;</text>
         </when>

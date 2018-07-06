@@ -396,6 +396,9 @@
         <when test="@name='ocirc'">
           <text>o</text>
         </when>
+        <when test="@name='ouml'">
+          <text>o</text>
+        </when>
         <when test="@name='rarr'">
           <text>-&gt;</text>
         </when>

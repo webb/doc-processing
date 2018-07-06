@@ -302,6 +302,9 @@
             <enumeration value="ocirc">
               <annotation><documentation>latin small letter o with circumflex, &#244;, <![CDATA[&#244;]]></documentation></annotation>
             </enumeration>
+            <enumeration value="ouml">
+              <annotation><documentation>latin small letter o with diaeresis, &#246;, <![CDATA[&#246;]]></documentation></annotation>
+            </enumeration>
             <enumeration value="rarr">
               <annotation><documentation>rightwards arrow, &#8594;, <![CDATA[&#8594]]></documentation></annotation>
             </enumeration>
