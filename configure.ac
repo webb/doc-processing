@@ -38,4 +38,5 @@ WR_check_prog_options(schematron_compile,schematron-compile)
 
 AC_CONFIG_FILES([Makefile], [chmod 444 Makefile])
 AC_CONFIG_FILES([stow.mk], [chmod 444 stow.mk])
+AC_CONFIG_FILES([zip.mk], [chmod 444 zip.mk])
 AC_OUTPUT
