@@ -831,10 +831,6 @@
       </h:a>
     </template>
 
-    <template match="comment()" mode="text">
-      <!-- ignore comments -->
-    </template>
-
   </xe:mode>
 
   <function name="this:get-id" as="xs:string">

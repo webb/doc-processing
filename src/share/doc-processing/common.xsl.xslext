@@ -37,6 +37,10 @@
 
   <xe:mode mode="text">
 
+    <template match="comment()" mode="text">
+      <!-- ignore comments -->
+    </template>
+
     <template match="node()" priority="-1" mode="text">
       <xe:assert test="false()" context=".">Unexpected content (mode=text). Item was <value-of select="f:get-item-description(.)"/>.</xe:assert>
     </template>
