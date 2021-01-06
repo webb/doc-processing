@@ -45,12 +45,13 @@ opt_out () {
 }
 
 #HELP:  --format=$format | -f $format: set format of output file
-#HELP:      Default format is html
-out_format=html
-#HELP:      formats: html: rendered HTML output
-#HELP:               text: diff-quality text output
+#HELP:      If unset, format is guessed from the output filename
+#HELP:      formats: html: rendered HTML output (*.html)
+#HELP:               text: diff-quality text output (*.txt)
 #HELP:               makedepend: Makefile dependencies
 #HELP:               rules-id-map: XML file mapping rule numbers to descriptive IDs
+unset default_out_format
+unset out_format
 opt_format () {
     [[ $# = 1 ]] || fail_assert "$FUNCNAME expected 1 args, got $#"
     case "$1" in
@@ -94,6 +95,19 @@ shift $((OPTIND-1))
 
 [[ is-set = ${in_file+is-set} ]] || fail "Option --in is required"
 [[ is-set = ${out_file+is-set} ]] || fail "Option --out is required"
+
+case $out_file in
+    *.html ) default_out_format=html;;
+    *.txt ) default_out_format=text;;
+esac
+
+if [[ ! ${out_format+is-set} ]]
+then
+  if [[ ! ${default_out_format+is-set} ]]
+  then fail "Output format is not set and can't be guessed; use --format."
+  else out_format=$default_out_format
+  fi
+fi
 
 if is_paranoid
 then command=(check-doc)
