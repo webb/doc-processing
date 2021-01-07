@@ -101,6 +101,13 @@
 
   </xe:mode>
 
+  <function name="common:get-label" as="xs:string">
+    <param name="item"/>
+    <value-of>
+      <apply-templates select="$item" mode="get-label"/>
+    </value-of>
+  </function>
+
   <xe:mode mode="get-label">
 
     <template match="doc:figure" mode="get-label">
@@ -183,6 +190,13 @@
     </template>
 
   </xe:mode>
+
+  <function name="common:get-title" as="xs:string">
+    <param name="item"/>
+    <value-of>
+      <apply-templates select="$item" mode="get-title"/>
+    </value-of>
+  </function>
 
   <xe:mode mode="get-title">
 

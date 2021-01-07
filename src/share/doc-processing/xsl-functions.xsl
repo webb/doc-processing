@@ -225,6 +225,36 @@
     </value-of>
   </function>
 
+  <!-- like xslt function 'replace', but takes lots of replacements and runs through all of them. To avoid crazy nested uses of replace(). -->
+  <!-- 
+       call like:
+
+       <value-of select="f:replace-multiple($string,
+                 ( '&lt;', '\\&lt;',
+                 '&gt;', '\\&gt;',
+                 '\*', '\\*',
+                 '\[', '\\[',
+                 '\]', '\\]' ))"/>
+       -->
+
+  <function name="f:replace-multiple" as="xs:string">
+    <param name="string" as="xs:string"/>
+    <param name="replacements" as="xs:string*"/>
+    <if test="count($replacements) mod 2 = 1">
+      <message terminate="yes">Error: assert failed: in function f:replace-multiple, $replacements must have a count that is even (got <value-of select="count($replacements)"/>)</message>
+    </if>
+    <choose>
+      <when test="empty($replacements)">
+        <value-of select="$string"/>
+      </when>
+      <otherwise>
+        <value-of select="f:replace-multiple(
+                          replace($string, $replacements[1], $replacements[2]),
+                          subsequence($replacements, 3))"/>
+      </otherwise>
+    </choose>
+  </function>
+
   <function name="f:regexp-star" as="xs:string">
     <param name="string" as="xs:string"/>
     <value-of select="concat('(', $string, ')*')"/>

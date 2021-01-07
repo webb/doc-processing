@@ -48,6 +48,8 @@ opt_out () {
 #HELP:      If unset, format is guessed from the output filename
 #HELP:      formats: html: rendered HTML output (*.html)
 #HELP:               text: diff-quality text output (*.txt)
+#HELP:               markdown: Pandoc-friendly Markdown output (*.md)
+#HELP:               docx: Word .docx via Pandoc Markdown (*.docx)
 #HELP:               makedepend: Makefile dependencies
 #HELP:               rules-id-map: XML file mapping rule numbers to descriptive IDs
 unset default_out_format
@@ -55,9 +57,17 @@ unset out_format
 opt_format () {
     [[ $# = 1 ]] || fail_assert "$FUNCNAME expected 1 args, got $#"
     case "$1" in
-        html | text | makedepend | rules-id-map ) out_format="$1";;
+        html | text | markdown | makedepend | rules-id-map | docx ) out_format="$1";;
         * ) fail "Unexpected format \"$1\"; expected html or text";;
     esac
+}
+
+#HELP:  --reference-docx=$file: Use styles from file (for Pandoc docx output)
+reference_docx=${share_dir}/reference.docx
+opt_reference_docx () {
+    (( $# == 1 )) || fail_assert "$FUNCNAME takes 1 arg (got $#)"
+    [[ -f $1 ]] || fail "File argument to --reference-docx must exist: \"$1\""
+    reference_docx=$1
 }
 
 OPTIND=1
@@ -79,6 +89,8 @@ do
                 keep-temps ) opt_keep_temps;;
                 not-paranoid ) opt_not_paranoid;;
                 out=* ) opt_out "${OPTARG#*=}";;
+                reference-docx ) fail_arg_missing "$OPTARG";;
+                reference-docx=* ) opt_reference_docx "${OPTARG#*=}";;
                 verbose ) opt_verbose;;
                 help=* | keep-temps=* | verbose=* | opt_not_paranoid=* )
                     fail "Long option \"${OPTARG%%=*}\" has unexpected argument";;
@@ -99,13 +111,17 @@ shift $((OPTIND-1))
 case $out_file in
     *.html ) default_out_format=html;;
     *.txt ) default_out_format=text;;
+    *.md ) default_out_format=markdown;;
+    *.docx ) default_out_format=docx;;
 esac
 
 if [[ ! ${out_format+is-set} ]]
 then
   if [[ ! ${default_out_format+is-set} ]]
   then fail "Output format is not set and can't be guessed; use --format."
-  else out_format=$default_out_format
+  else
+      vecho "Guessed output format is $default_out_format"
+      out_format=$default_out_format
   fi
 fi
 
@@ -123,6 +139,21 @@ case $out_format in
         vrun saxon --in="$in_file" \
              --out="$out_file" \
              --xsl="$share_dir"/doc-to-text.xsl ;;
+    markdown )
+        vrun saxon --in="$in_file" \
+             --out="$out_file" \
+             --xsl="$share_dir"/doc-to-markdown.xsl ;;
+    docx )
+          temp_make_file DOCX_MD
+          vrun saxon --in="$in_file" \
+               --out="$DOCX_MD" \
+               --xsl="$share_dir"/doc-to-docx-markdown.xsl
+          command=(pandoc --from=markdown-smart-tex_math_dollars \
+                   --to=docx --output="$out_file" --resource-path="$(dirname "$in_file")")
+          if [[ ${reference_docx+is-set} ]]
+          then command+=(--reference-doc="$reference_docx")
+          fi
+          vrun "${command[@]}" "$DOCX_MD" ;;
     rules-id-map )
         vrun saxon --in="$in_file" \
              --out="$out_file" \

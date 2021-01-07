@@ -1,0 +1,983 @@
+<?xml version="1.0" encoding="UTF-8"?> <!-- -*-sgml-*- -->
+<stylesheet 
+   version="2.0"
+   xmlns:common="https://iead.ittl.gtri.org/wr24/document/functions/common/2011-10-05-1029"
+   xmlns:doc="https://iead.ittl.gtri.org/wr24/doc/2011-09-30-2258"
+   xmlns:f="http://ittl.gtri.org/wr24/2009-03-10-1439/xsl-functions"
+   xmlns:local="https://github.com/webb/doc-processing/src/share/doc-processing/doc-to-xhtml.xsl.xslext"
+   xmlns:xe="http://ittl.gtri.gatech.edu/wr24/2009-03-23-1736/xsl-extension"
+   xmlns:xs="http://www.w3.org/2001/XMLSchema"
+   xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+   xmlns="http://www.w3.org/1999/XSL/Transform">
+
+  <include href="common.xsl"/>
+
+  <output method="text" indent="no" encoding="UTF-8"/>
+
+  <!-- 
+
+       This targets Pandoc Markdown
+
+       Use -\-from=+fenced_divs to support hrefs to paragraphs:
+
+       ::: {#rfc4627}
+
+       blah blah
+
+       :::
+
+    -->
+
+  <variable name="generate-cross-references" as="xs:boolean" select="true()"/>
+
+  <variable name="indent-prefix" as="xs:string" select="'    '"/>
+  <variable name="newline" as="xs:string"><text>&#10;</text></variable>
+
+  <function name="local:text-to-markdown" as="xs:string">
+    <param name="string" as="xs:string"/>
+    <value-of select="f:replace-multiple($string,
+                      ( '&lt;', '\\&lt;',
+                      '&gt;', '\\&gt;',
+                      '\*', '\\*',
+                      '\^', '\\^',
+                      '\[', '\\[',
+                      '\]', '\\]',
+                      '\|', '\\|' ))"/>
+  </function>
+
+  <!-- 
+       call like:
+
+       <variable name="div" select="local:begin-div-style-anchor(concat($style, '.figure.caption'), common:get-id(.))"/>
+       <value-of select="$div"/>
+       ... do stuf ...
+       <value-of select="local:end-div($div)"/>
+
+       This ensures that the div can be shortcut, and that the start and end are shortcut the same way.
+    -->
+
+  <function name="local:begin-div-style" as="xs:string?">
+    <param name="style" as="xs:string"/>
+    <sequence select="local:begin-div-style-anchor($style, ())"/>
+  </function>
+
+  <function name="local:begin-div-style-anchor" as="xs:string?">
+    <param name="style" as="xs:string"/>
+    <param name="anchor" as="xs:string?"/>
+    <variable name="style-part" as="xs:string?">
+      <choose>
+        <when test="false()"/>
+        <otherwise>
+          <if test="true() or ends-with($style, '.pre')">
+            <value-of select="concat('custom-style=&quot;', $style, '&quot;')"/>
+          </if>
+        </otherwise>
+      </choose>
+    </variable>
+    <variable name="anchor-part" as="xs:string?">
+      <choose>
+        <when test="empty($anchor)"/>
+        <when test="not($generate-cross-references)"/>
+        <otherwise>
+          <value-of select="concat('#', $anchor)"/>
+        </otherwise>
+      </choose>
+    </variable>
+    <if test="true()"> <!-- false to suppress all divs -->
+      <if test="exists($anchor-part) or exists($style-part)">
+        <value-of select="concat('::: {', string-join( ($anchor-part, $style-part), ' '), '}', $newline)"/>
+      </if>
+    </if>
+  </function>
+
+  <function name="local:end-div" as="xs:string?">
+    <param name="div" as="xs:string?"/>
+    <if test="exists($div)">
+      <value-of select="concat(':::', $newline)"/>
+    </if>
+  </function>
+
+  <function name="local:normalize-text" as="xs:string">
+    <param name="string" as="xs:string"/>
+    <variable name="bounded" as="xs:string" select="concat('X', $string, 'X')"/>
+    <variable name="normalized" as="xs:string" select="normalize-space($bounded)"/>
+    <variable name="stripped" as="xs:string" select="substring($normalized, 2, string-length($normalized)-2)"/>
+    <value-of select="$stripped"/>
+  </function>
+
+  <function name="local:get-rule-applicability">
+    <param name="rule" as="element()"/>
+    <param name="as-reference" as="xs:boolean"/>
+
+    <xe:assert test="node-name($rule) = ( xs:QName('doc:rule'), xs:QName('doc:bogusRule') )" context="$rule"
+               >in local:get-rule-applicability($rule), $rule must be a doc:rule or doc:bogusRule.</xe:assert>
+    <variable name="conformance-targets" as="xs:string*" 
+              select="tokenize(normalize-space($rule/@applicability), ' ')"/>
+    <if test="exists($conformance-targets)">
+      <text> (</text>
+      <for-each select="$conformance-targets">
+        <variable name="conformance-target-id" select="."/>
+        <if test="position() != 1">
+          <text>, </text>
+        </if>
+        <variable name="resolved" 
+                  select="root($rule)//doc:*[string(@id) = string($conformance-target-id)]" 
+                  as="element(doc:conformance-target)?"/>
+        <xe:assert test="count($resolved) = 1" context="$rule">in local:get-rule-applicability($rule), conformance target (&quot;<value-of select="$conformance-target-id"/>&quot;) of rule must resolve to a conformance target ID.</xe:assert>
+        <choose>
+          <when test="$as-reference">
+            <apply-templates select="$resolved" mode="get-reference"/>
+          </when>
+          <otherwise>  
+            <apply-templates select="$resolved/node()" mode="text"/>
+          </otherwise>
+        </choose>
+      </for-each>
+      <text>)</text>
+    </if>
+  </function>
+
+  <function name="local:convert-to-preformatted" as="xs:string">
+    <param name="string" as="xs:string"/>
+    <value-of select="f:replace-multiple($string, ( 
+                      '&amp;', '&amp;amp;',
+                      '\\', '\\\\',
+                      '&lt;', '\\&lt;',
+                      '&gt;', '\\&gt;',
+                      '\^', '\\^'
+                      ))"/>
+  </function>
+
+  <function name="local:convert-to-preformatted-block" as="xs:string">
+    <param name="string" as="xs:string"/>
+    <value-of>
+      <for-each select="tokenize(local:convert-to-preformatted($string), '&#10;')">
+        <text>| </text>
+        <value-of select="."/>
+        <text>&#10;</text>
+      </for-each>
+    </value-of>
+  </function>
+
+  <function name="local:get-cross-ref" as="xs:string">
+    <param name="link-text" as="xs:string"/>
+    <param name="link-anchor" as="xs:string"/>
+    <choose>
+      <when test="$generate-cross-references">
+        <value-of select="concat('[', $link-text, '](#', $link-anchor, ')')"/>
+      </when>
+      <otherwise>
+        <value-of select="$link-text"/>
+      </otherwise>
+    </choose>
+  </function>
+
+  <function name="local:get-span-anchor" as="xs:string">
+    <param name="text" as="xs:string"/>
+    <param name="anchor" as="xs:string"/>
+    <choose>
+      <when test="$generate-cross-references">
+        <value-of select="concat('[', $text, ']{#', $anchor, '}')"/>
+      </when>
+      <otherwise>
+        <value-of select="$text"/>
+      </otherwise>
+    </choose>
+  </function>
+
+  <function name="local:get-anchor" as="xs:string?">
+    <param name="anchor" as="xs:string"/>
+    <if test="$generate-cross-references">
+      <value-of select="concat(' {#', $anchor, '}')"/>
+    </if>
+  </function>
+
+  <template match="text()" mode="text" priority="1">
+    <param name="text-is-preformatted" as="xs:boolean" select="false()" tunnel="yes"/>
+    <choose>
+      <when test="$text-is-preformatted">
+        <value-of select="local:convert-to-preformatted-block(.)"/>
+      </when>
+      <otherwise>
+        <variable name="string" as="xs:string" select="."/>
+        <variable name="replaced" as="xs:string"
+                  select="replace($string, '&lt;', '\\&lt;')"/>
+        <variable name="bounded" as="xs:string" select="concat('X', $replaced, 'X')"/>
+        <variable name="normalized" as="xs:string" select="normalize-space($bounded)"/>
+        <variable name="stripped" as="xs:string" select="substring($normalized, 2, string-length($normalized)-2)"/>
+        <value-of select="$stripped"/>
+      </otherwise>
+    </choose>
+  </template>
+
+  <!-- 
+Sample Markdown header for pandoc:
+
+\-\-\-
+title: NIEM Internationalization  
+phone: (404)407-6181  
+date: 5/12/20  
+email: webb.roberts@gtri.gatech.edu  
+author: NIEM Technical Architecture Committee (NTAC)  
+subtitle: An NTAC perspective on options for an internationalization strategy for NIEM.
+\-\-\-
+
+ -->
+
+  <template match="doc:document">
+    <param name="style" as="xs:string" tunnel="yes" select="'doc'"/>
+
+    <text>---&#10;</text>
+    <text>title: </text>
+    <apply-templates select="doc:title/node()" mode="text"/>
+    <text>&#10;</text>
+    <text>subtitle: Version </text>
+    <apply-templates select="doc:version/node()" mode="text"/>
+    <text>&#10;</text>
+    <text>date: </text>
+    <value-of select="format-date(doc:date, '[MNn] [D], [Y]', 'en', (), ())"/>
+    <text>&#10;</text>
+    <text>author: </text>
+    <apply-templates select="doc:author/node()" mode="text"/>    
+    <text>&#10;</text>
+    <text>---&#10;&#10;</text>
+    <apply-templates select="doc:flowStructureAbstract | doc:flowAbstract | doc:section | doc:comment | doc:subsection | doc:p | doc:pre | doc:reference | doc:ul | doc:ol | doc:tableOfContents | doc:tableOfFigures | doc:tableOfTables | doc:table | doc:blockQuote | doc:bogusDefinition | doc:definition | doc:bogusPrinciple | doc:principle | doc:bogusRule | doc:rule | doc:figure">
+      <with-param name="style" select="$style" tunnel="yes"/>
+      <with-param name="prefix" select="''" tunnel="yes"/>
+    </apply-templates>
+  </template>
+
+  <template match="doc:subsection">
+    <text>&#10;</text>
+    <for-each select="1 to count(ancestor-or-self::doc:section|ancestor-or-self::doc:subsection)">
+      <text>#</text>
+    </for-each>
+    <text> </text>
+    <apply-templates select="doc:title/node()" mode="text"/>
+    <text>&#10;</text>
+    
+    <apply-templates/>
+  </template>
+
+  <template match="doc:sub">
+    <param name="style" as="xs:string" tunnel="yes"/>
+    <apply-templates>
+      <with-param name="style" select="concat($style, '.sub')" tunnel="yes"/>
+    </apply-templates>
+  </template>
+
+  <template match="doc:p">
+    <param name="style" as="xs:string" tunnel="yes"/>
+
+    <text>&#10;</text>
+    <variable name="div" select="local:begin-div-style(concat($style, '.p'))"/>
+    <value-of select="$div"/>
+    <apply-templates mode="text"/>
+    <text>&#10;</text>
+
+    <value-of select="local:end-div($div)"/>
+  </template>
+
+  <template match="doc:p-todo">
+    <text>{</text>
+    <apply-templates mode="text"/>
+    <text>}</text>
+    <text>&#10;&#10;</text>
+  </template>
+
+  <template match="doc:pre">
+    <param name="style" as="xs:string" tunnel="yes"/>
+
+    <text>&#10;</text>
+    <variable name="div" select="local:begin-div-style(concat($style, '.pre'))"/>
+    <value-of select="$div"/>
+    <apply-templates mode="text">
+      <with-param name="text-is-preformatted" tunnel="yes" select="true()"/>
+    </apply-templates>
+    <value-of select="local:end-div($div)"/>
+  </template>
+
+  <template match="doc:include-text" mode="text" priority="1">
+    <value-of select="local:convert-to-preformatted-block(unparsed-text(resolve-uri(@href, base-uri(.))))"/>
+  </template>
+  
+  <template match="doc:table">
+    <param name="style" as="xs:string" tunnel="yes"/>
+
+    <text>&#10;</text>
+    <variable name="div" select="local:begin-div-style-anchor(concat($style, '.table.caption'), common:get-id(.))"/>
+    <value-of select="$div"/>
+    <if test="exists(doc:title)">
+      <apply-templates select="." mode="get-label"/>
+      <text>: </text>
+      <apply-templates select="." mode="get-title"/>
+      <text>&#10;</text>
+    </if>
+    <value-of select="local:end-div($div)"/>
+    
+    <apply-templates select="doc:theadr|doc:tr">
+      <with-param name="style" tunnel="yes" select="concat($style, '.table')"/>
+    </apply-templates>
+  </template>
+
+  <template match="doc:theadr">
+    <text>&#10;</text>
+    <apply-templates select="*"/>
+    <text>|&#10;</text>
+
+    <for-each select="*">
+      <text>|:--</text>
+    </for-each>
+    <text>|&#10;</text>
+    
+  </template>
+
+  <template match="doc:tr">
+    <param name="prefix" as="xs:string" tunnel="yes" select="''"/>
+    <value-of select="$prefix"/>
+    <apply-templates select="*"/>
+    <text>|&#10;</text>
+  </template>
+
+  <template match="doc:th | doc:td">
+    <text>|</text>
+    <apply-templates mode="text"/>
+  </template>
+
+  <template match="doc:ruleSection">
+    <param name="style" as="xs:string" tunnel="yes"/>
+
+    <text>&#10;</text>
+    <variable name="div" select="local:begin-div-style-anchor(concat($style, '.ruleSection'), common:get-id(.))"/>
+    <value-of select="$div"/>
+
+    <apply-templates select="." mode="get-label"/>
+    <text>. </text>
+    <apply-templates select="." mode="get-title"/>
+    <text>&#10;</text>
+
+    <value-of select="local:end-div($div)"/>
+
+    <apply-templates>
+      <with-param name="style" tunnel="yes" select="concat($style, '.ruleSection')"/>
+    </apply-templates>
+  </template>
+
+  <template match="doc:section">
+    <param name="prefix" as="xs:string" tunnel="yes" select="''"/>
+    <text>&#10;</text>
+    <for-each select="1 to count(ancestor-or-self::doc:section|ancestor-or-self::doc:subsection)">
+      <text>#</text>
+    </for-each>
+    <text> </text>
+    <apply-templates select="." mode="get-label"/>
+    <text>. </text>
+    <apply-templates select="." mode="get-title"/>
+    <value-of select="local:get-anchor(common:get-id(.))"/>
+    <text>&#10;</text>
+
+    <apply-templates/>
+  </template>
+  
+  <template match="doc:index">
+    <param name="style" as="xs:string" tunnel="yes"/>
+
+    <variable name="root" select="root(.)"/>
+    <for-each select="distinct-values(
+                      (: definitions :)
+                      for $definition in //doc:definition return $definition/@term
+                      )">
+      <sort select="lower-case(.)"/>
+      <variable name="term" as="xs:string" select="."/>
+
+      <text>&#10;</text>
+      <variable name="div" select="local:begin-div-style(concat($style, '.toc'))"/>
+      <value-of select="$div"/>
+      <value-of select="."/>
+      <text>: </text>
+      <variable name="entries" 
+                select="$root//doc:definition[@term = $term]
+                        | $root//doc:xe[@term = $term]
+                        | $root//doc:xe[empty(@term) and string(.) = $term]
+                        | $root//doc:termRef[@term = $term]
+                        | $root//doc:termRef[empty(@term) and string(.) = $term]
+                        "/>
+      <for-each select="($entries)">
+        <if test="position() &gt; 1">
+          <text>, </text>
+        </if>
+        <variable name="label">
+          <value-of>
+            <text>Section </text>
+            <apply-templates select="ancestor-or-self::doc:section[1]" mode="get-label"/>
+            <if test="self::doc:definition"> (definition)</if>
+          </value-of>
+        </variable>
+        <value-of select="local:get-cross-ref($label, common:get-id(.))"/>
+      </for-each>
+      <text>&#10;</text>
+      <value-of select="local:end-div($div)"/>
+    </for-each>
+  </template>
+
+  <template match="doc:indexOfDefinitions">
+    <param name="style" as="xs:string" tunnel="yes"/>
+
+    <for-each select="//doc:definition|//doc:termDef">
+      <sort select="lower-case(normalize-space(if (exists(@term)) then @term else .))"/>
+      <variable name="term" as="xs:string"
+                select="normalize-space(if (exists(@term)) then @term else .)"/>
+
+      <text>&#10;</text>
+      <variable name="div" select="local:begin-div-style(concat($style, '.toc'))"/>
+      <value-of select="$div"/>
+      <value-of select="local:get-cross-ref($term, common:get-id(.))"/>
+      <text>: </text>
+      <apply-templates select="ancestor::doc:section[1]" mode="get-reference"/>
+      <text>&#10;</text>
+      <value-of select="local:end-div($div)"/>
+    </for-each>
+  </template>
+
+  <template match="doc:indexOfRules">
+    <param name="style" as="xs:string" tunnel="yes"/>
+
+    <for-each select="//doc:rule">
+      <text>&#10;</text>
+      <variable name="div" select="local:begin-div-style(concat($style, '.toc'))"/>
+      <value-of select="$div"/>
+      <apply-templates select="." mode="get-reference"/>
+      <text>: </text>
+      <apply-templates select="ancestor::doc:section[1]" mode="get-reference"/>
+      <text>&#10;</text>
+      <value-of select="local:end-div($div)"/>
+    </for-each>
+  </template>
+
+  <template match="doc:image[@src]">
+    <param name="style" as="xs:string" tunnel="yes"/>
+
+    <text>&#10;</text>
+    <variable name="div" select="local:begin-div-style(concat($style, '.image'))"/>
+    <value-of select="$div"/>
+    <text>&#10;![](</text>
+    <value-of select="@src"/>
+    <text>)&#10;</text>
+    <text>&#10;</text>
+    <value-of select="local:end-div($div)"/>
+  </template>
+
+  <template match="doc:tableOfTables">
+    <param name="style" as="xs:string" tunnel="yes"/>
+
+    <for-each select="//doc:table[exists(doc:title)]">
+      <variable name="div" select="local:begin-div-style(concat($style, '.toc'))"/>
+      <value-of select="$div"/>
+      <variable name="label">
+        <value-of>
+          <apply-templates select="." mode="get-label"/>
+          <text>: </text>
+          <apply-templates select="." mode="get-title"/>
+        </value-of>
+      </variable>
+      <value-of select="local:get-cross-ref($label, common:get-id(.))"/>
+      <text>&#10;</text>
+      <value-of select="local:end-div($div)"/>
+    </for-each>
+  </template>
+
+  <template match="doc:tableOfFigures">
+    <param name="style" as="xs:string" tunnel="yes"/>
+
+    <for-each select="//doc:figure">
+      <variable name="div" select="local:begin-div-style(concat($style, '.toc'))"/>
+      <value-of select="$div"/>
+      <variable name="label">
+        <value-of>
+          <apply-templates select="." mode="get-label"/>
+          <text>: </text>
+          <apply-templates select="." mode="get-title"/>
+        </value-of>
+      </variable>
+      <value-of select="local:get-cross-ref($label, common:get-id(.))"/>
+      <text>&#10;</text>
+      <value-of select="local:end-div($div)"/>
+    </for-each>
+  </template>
+
+  <!--  any pass-through element -->
+  <template match="doc:blockquote | doc:ul | doc:ol">
+    <param name="style" as="xs:string" tunnel="yes"/>
+    <variable name="this-element" as="xs:string" select="local-name()"/>
+    <apply-templates>
+      <with-param name="style" tunnel="yes" select="concat($style, '.', $this-element)"/>
+    </apply-templates>
+  </template>
+
+  <template match="doc:li">
+    <param name="style" as="xs:string" tunnel="yes"/>
+    
+    <apply-templates select="*[1]">
+      <with-param name="style" tunnel="yes" select="concat($style, '.li-first')"/>
+    </apply-templates>
+    <apply-templates select="*[position() gt 1]">
+      <with-param name="style" tunnel="yes" select="concat($style, '.li')"/>
+    </apply-templates>
+  </template>
+
+  <template match="doc:listOfSections">
+    <param name="style" as="xs:string" tunnel="yes"/>
+    
+    <text>&#10;</text>
+    <if test="exists(parent::*/doc:section)">
+      <for-each select="parent::*/doc:section">
+        <variable name="div" select="local:begin-div-style(concat($style, '.ul.li-first.p'))"/>
+        <value-of select="$div"/>
+        <apply-templates select="." mode="get-reference"/>
+        <text>&#10;</text>
+        <value-of select="local:end-div($div)"/>
+      </for-each>
+    </if>
+  </template>
+
+  <template match="doc:bogusDefinition | doc:definition">
+    <param name="style" as="xs:string" tunnel="yes"/>
+
+    <text>&#10;</text>
+    <variable name="div" select="local:begin-div-style-anchor(concat($style, '.box.head'), common:get-id(.))"/>
+    <value-of select="$div"/>
+
+    <text>\[Definition: </text>
+    <value-of select="local:normalize-text(local:text-to-markdown(@term))"/>
+    <text>\]&#10;</text>
+
+    <value-of select="local:end-div($div)"/>
+
+    <apply-templates>
+      <with-param name="style" tunnel="yes" select="concat($style, '.box')"/>
+    </apply-templates>
+
+  </template>
+
+  <template match="doc:principle|doc:bogusPrinciple">
+    <param name="style" as="xs:string" tunnel="yes"/>
+
+    <text>&#10;</text>
+    <variable name="div" select="local:begin-div-style-anchor(concat($style, '.box.head'), common:get-id(.))"/>
+    <value-of select="$div"/>
+    <text>[</text>
+    <apply-templates select="." mode="get-label"/>
+    <text>]</text>
+    <text>&#10;</text>
+    <value-of select="local:end-div($div)"/>
+
+    <apply-templates>
+      <with-param name="style" tunnel="yes" select="concat($style, '.box')"/>
+    </apply-templates>
+  </template>
+
+  <template match="doc:rule|doc:bogusRule">
+    <param name="style" as="xs:string" tunnel="yes"/>
+
+    <text>&#10;</text>
+    <variable name="div" select="local:begin-div-style-anchor(concat($style, '.box.head'), common:get-id(.))"/>
+    <value-of select="$div"/>
+    <text></text>
+    <text>\[</text>
+    <variable name="label">
+      <apply-templates select="." mode="get-label"/>
+    </variable>
+    <value-of select="local:normalize-text(local:text-to-markdown($label))"/>
+    <text>\]</text>
+    <if test="exists(@applicability)">
+      <text> (</text>
+      <variable name="applicability">
+        <value-of select="f:list-get-joined(@applicability, ', ')"/>
+      </variable>
+      <value-of select="local:normalize-text(local:text-to-markdown($applicability))"/>
+      <text>)</text>
+    </if>
+    <if test="exists(@class)">
+      <text> (</text>
+      <value-of select="local:normalize-text(local:text-to-markdown(@class))"/>
+      <text>)</text>
+    </if>
+    <text>&#10;</text>
+    <value-of select="local:end-div($div)"/>
+    
+    <apply-templates>
+      <with-param name="style" tunnel="yes" select="concat($style, '.box')"/>
+    </apply-templates>
+  </template>
+
+  <template match="doc:figure">
+    <param name="style" as="xs:string" tunnel="yes"/>
+
+    <text>&#10;</text>
+    <variable name="div" select="local:begin-div-style-anchor(concat($style, '.figure.caption'), common:get-id(.))"/>
+    <value-of select="$div"/>
+    <apply-templates select="." mode="get-label"/>
+    <text>: </text>
+    <apply-templates select="." mode="get-title"/>
+    <text>&#10;</text>
+    <value-of select="local:end-div($div)"/>
+
+    <apply-templates>
+      <with-param name="style" tunnel="yes" select="concat($style, '.figure')"/>
+    </apply-templates>
+  </template>
+
+  <template match="doc:reference">
+    <param name="style" as="xs:string" tunnel="yes"/>
+    
+    <variable name="div" select="local:begin-div-style-anchor(concat($style, '.reference'), common:get-id(.))"/>
+    <value-of select="$div"/>
+    <text>**</text>
+    <apply-templates select="." mode="get-label"/>
+    <text>**</text>
+    <text>: </text>
+    <apply-templates select="doc:p[1]/node()" mode="text"/>
+    <text>&#10;&#10;</text>
+    <apply-templates select="*[position() != 1]"/>
+    <value-of select="local:end-div($div)"/>
+  </template>
+
+  <template match="doc:tableOfContents">
+    <apply-templates select="/*" mode="gen-table-of-contents"/>
+  </template>
+
+  <xe:mode mode="gen-table-of-contents">
+
+    <template match="doc:section" mode="gen-table-of-contents">
+      <param name="style" as="xs:string" tunnel="yes"/>
+
+      <text>&#10;</text>
+      <variable name="div" select="local:begin-div-style(concat($style, '.toc'))"/>
+      <value-of select="$div"/>
+      <variable name="label">
+        <value-of>
+          <apply-templates select="." mode="get-label"/>
+          <text>. </text>
+          <apply-templates select="." mode="get-title"/>
+        </value-of>
+      </variable>
+      <value-of select="local:get-cross-ref($label, common:get-id(.))"/>
+      <text>&#10;</text>
+      <value-of select="local:end-div($div)"/>
+
+      <apply-templates select="*" mode="gen-table-of-contents">
+        <with-param name="style" as="xs:string" tunnel="yes" select="concat($style, '.toc')"/>
+      </apply-templates>
+    </template>
+
+    <template match="node()" mode="gen-table-of-contents" priority="-1">
+      <apply-templates select="*" mode="gen-table-of-contents"/>
+    </template>
+
+    <template match="text()" mode="gen-table-of-contents"/>
+
+  </xe:mode>
+
+  <xe:mode mode="text">
+
+    <template match="doc:termDef" mode="text">
+      <variable name="text">
+        <value-of>
+          <text>**</text>
+          <apply-templates mode="text"/>      
+          <text>**</text>
+        </value-of>
+      </variable>
+      <value-of select="local:get-span-anchor($text, common:get-id(.))"/>
+    </template>
+      
+    <template match="doc:termRef" mode="text">
+      <variable name="term" as="xs:string" 
+                select="normalize-space(string(if (exists(@term)) then @term else .))"/>
+      <variable name="definition" as="element()" 
+                select="exactly-one(
+                          //doc:definition[normalize-space(@term) = $term]
+                          | //doc:termDef[normalize-space(.) = $term])"/>
+      <variable name="id" as="xs:string" 
+                select="common:get-id($definition)"/>
+      <variable name="label" as="xs:string">
+        <value-of>
+          <text>&#183;</text>
+          <apply-templates mode="text"/>
+          <text>&#183;</text>
+        </value-of>
+      </variable>
+      <value-of select="local:get-span-anchor(local:get-cross-ref($label, $id), common:get-id(.))"/>
+    </template>
+
+    <template match="doc:xmlBlurb" mode="text" priority="1">
+      <param name="prefix" as="xs:string" tunnel="yes" select="''"/>
+      <value-of select="local:convert-to-preformatted-block(
+                          unparsed-text(resolve-uri(concat('xmlBlurb/', @id, '.txt'), base-uri(.))))"/>
+    </template>
+
+    <template match="doc:conformance-target" mode="text">
+      <apply-templates mode="text"/>
+    </template>
+
+    <template match="doc:code" mode="text">
+      <text>`</text>
+      <apply-templates mode="text"/>
+      <text>`</text>
+    </template>
+  
+    <template match="doc:qName | doc:local-name" mode="text">
+      <text>`</text>
+      <apply-templates mode="text"/>
+      <text>`</text>
+    </template>
+  
+    <template match="doc:var" mode="text">
+      <text>*</text>
+      <apply-templates mode="text"/>
+      <text>*</text>
+    </template>
+  
+    <template match="doc:namespace-uri-for-prefix" mode="text">
+      <value-of select="exactly-one(namespace-uri-for-prefix(string-join(text(), ''), .))"/>
+    </template>
+  
+    <template match="doc:em" mode="text">
+      <text>*</text>
+      <apply-templates mode="text"/>
+      <text>*</text>
+    </template>
+
+    <template match="doc:xe" mode="text">
+      <apply-templates mode="text"/>
+    </template>
+  
+    <template match="doc:char" mode="text">
+      <!-- look for "single character escapes" in http://unixhelp.ed.ac.uk/CGI/man-cgi?groff+7 -->
+      <choose>
+        <when test="@name='aacute'">
+          <text>á</text>
+        </when>
+        <when test="@name='ccedil'">
+          <text>ç</text>
+        </when>
+        <when test="@name='eacute'">
+          <text>é</text>
+        </when>
+        <when test="@name='hellip'">
+          <text>…</text>
+        </when>
+        <when test="@name='ndash'">
+          <text>–</text>
+        </when>
+        <when test="@name='mdash'">
+          <text>—</text>
+        </when>
+        <when test="@name='middot'">
+          <text>·</text>
+        </when>
+        <when test="@name='nbsp'">
+          <text> </text>
+        </when>
+        <when test="@name='ocirc'">
+          <text>ô</text>
+        </when>
+        <when test="@name='ouml'">
+          <text>ö</text>
+        </when>
+        <when test="@name='rarr'">
+          <text>→</text>
+        </when>
+        <when test="@name='rsquo'">
+          <text>’</text>
+        </when>
+        <when test="@name='sect'">
+          <text>§</text>
+        </when>
+        <otherwise>
+          <xe:assert test="false()" context=".">Code is unprepared for occurrence of named character (@name=&quot;<value-of select="@name"/>&quot;).</xe:assert>
+        </otherwise>
+      </choose>
+    </template>
+    
+    <template match="doc:strong" mode="text">
+      <text>**</text>
+      <apply-templates mode="text"/>
+      <text>**</text>
+    </template>
+    
+    <template match="doc:q" mode="text">
+      <variable name="depth" select="count(ancestor-or-self::doc:q) mod 2" as="xs:integer"/>
+      <choose>
+        <when test="$depth mod 2 = 1">
+          <text>&#x201c;</text> <!-- left double quotation mark https://www.fileformat.info/info/unicode/char/201c/index.htm -->
+        </when>
+        <otherwise>
+          <text>&#x2018;</text> <!-- left single quotation mark -->
+        </otherwise>
+      </choose>
+      <apply-templates mode="text"/>
+      <choose>
+        <when test="$depth mod 2 = 1">
+          <text>&#x201d;</text>
+        </when>
+        <otherwise>
+          <text>&#x2019;</text>
+        </otherwise>
+      </choose>
+    </template>
+    
+    <template match="doc:link" mode="text">
+      <variable name="label" select="."/>
+      <variable name="href">
+        <choose>
+          <when test="exists(@href)">
+            <value-of select="@href"/>
+          </when>
+          <otherwise>
+            <value-of select="."/>
+          </otherwise>
+        </choose>
+      </variable>
+
+      <text>[`</text>
+      <value-of select="$label"/>
+      <text>`](</text>
+      <value-of select="$href"/>
+      <text>)</text>
+    </template>
+  
+    <template match="doc:a" mode="text">
+      <text>[</text>
+      <apply-templates mode="text"/>
+      <text>](</text>
+      <value-of select="@href"/>
+      <text>)</text>
+    </template>
+  
+  </xe:mode>
+
+  <xe:mode mode="get-reference">
+
+    <template match="doc:figure" mode="get-reference">
+      <param name="source" as="element()?" select="()"/>
+      <variable name="label" as="xs:string">
+        <value-of>
+          <apply-templates select="." mode="get-label"/>
+          <text>, *</text>
+          <apply-templates select="." mode="get-title"/>
+          <text>*</text>
+          <if test="exists($source) and empty($source/ancestor::doc:rule)">
+            <value-of select="common:get-below-or-above($source, .)"/>
+          </if>
+        </value-of>
+      </variable>
+      <value-of select="local:get-cross-ref($label, common:get-id(.))"/>
+    </template>
+
+    <template match="doc:reference" mode="get-reference">
+      <param name="source" as="element()?" select="()"/>
+      <value-of select="local:get-cross-ref(concat('**', common:get-label(.), '**'), common:get-id(.))"/>
+    </template>
+
+    <template match="doc:section" mode="get-reference">
+      <param name="source" as="element()?" select="()"/>
+
+      <variable name="label" as="xs:string">
+        <value-of>
+          <if test="not(common:section-is-appendix(.))">
+            <text>Section </text>
+          </if>
+          <apply-templates select="." mode="get-label"/>
+          <text>, *</text>
+          <apply-templates select="." mode="get-title"/>
+          <text>*</text>
+          <if test="exists($source)">
+            <sequence select="common:get-below-or-above($source, .)"/>
+          </if>
+        </value-of>
+      </variable>
+      <value-of select="local:get-cross-ref($label, common:get-id(.))"/>
+    </template>
+
+    <template match="doc:ruleSection" mode="get-reference">
+      <param name="source" as="element()?" select="()"/>
+      <variable name="rule" as="element(doc:rule)" select="exactly-one(doc:rule)"/>
+      <variable name="label" as="xs:string">
+        <value-of>
+          <apply-templates select="$rule" mode="get-label"/>
+          <text>, *</text>
+          <apply-templates select="." mode="get-title"/>
+          <text>*</text>
+          <if test="exists($source) and empty($source/ancestor::doc:rule)">
+            <value-of select="common:get-below-or-above($source, .)"/>
+          </if>
+        </value-of>
+      </variable>
+      <value-of select="local:get-cross-ref($label, common:get-id(.))"/>
+    </template>
+
+    <template match="doc:rule" mode="get-reference">
+      <param name="source" as="element()?" select="()"/>
+      <choose>
+        <when test="exists(parent::doc:ruleSection)">
+          <apply-templates select="parent::doc:ruleSection" mode="get-reference">
+            <with-param name="source" select="$source"/>
+          </apply-templates>
+        </when>
+        <otherwise>
+          <variable name="label" as="xs:string">
+            <value-of>
+              <apply-templates select="." mode="get-label"/>
+              <sequence select="local:get-rule-applicability(., false())"/>
+              <if test="exists($source) and empty($source/ancestor::doc:rule)">
+                <value-of select="common:get-below-or-above($source, .)"/>
+              </if>
+            </value-of>
+          </variable>
+          <value-of select="local:get-cross-ref($label, common:get-id(.))"/>
+        </otherwise>
+      </choose>
+    </template>
+
+    <template match="doc:principle | doc:definition" mode="get-reference">
+      <param name="source" as="element()?" select="()"/>
+      
+      <variable name="label" as="xs:string">
+        <value-of>
+          <apply-templates select="." mode="get-label"/>
+          <text></text>
+          <if test="exists($source) and empty($source/ancestor::doc:rule)">
+            <value-of select="common:get-below-or-above($source, .)"/>
+          </if>
+        </value-of>
+      </variable>
+      <value-of select="local:get-cross-ref($label, common:get-id(.))"/>
+    </template>
+
+    <template match="doc:table" mode="get-reference">
+      <param name="source" as="element()?" select="()"/>
+      <variable name="label" as="xs:string">
+        <value-of>
+          <apply-templates select="." mode="get-label"/>
+          <text>, *</text>
+          <apply-templates select="." mode="get-title"/>
+          <text>*</text>
+          <if test="exists($source) and empty($source/ancestor::doc:rule)">
+            <value-of select="common:get-below-or-above($source, .)"/>
+          </if>
+        </value-of>
+      </variable>
+      <value-of select="local:get-cross-ref($label, common:get-id(.))"/>
+    </template>
+
+  </xe:mode>
+
+</stylesheet>
+<!-- 
+  Local Variables:
+  mode: sgml
+  indent-tabs-mode: nil
+  fill-column: 9999
+  End:
+-->
