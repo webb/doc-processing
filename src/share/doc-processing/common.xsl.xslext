@@ -226,6 +226,69 @@
     </value-of>
   </function>
 
+  <function name="common:get-id" as="xs:string">
+    <param name="node" as="node()?"/>
+    <value-of>
+      <apply-templates select="$node" mode="get-id"/>
+    </value-of>
+  </function>
+
+  <xe:mode mode="get-id">
+    <template match="*" priority="-1" mode="get-id">
+      <value-of select="if (exists(@id))
+                          then @id
+                          else generate-id(.)"/>
+    </template>
+
+    <template match="doc:section" mode="get-id">
+      <value-of select="concat(
+                          (if (exists(ancestor-or-self::doc:section[common:section-is-appendix(.)]))
+                           then 'appendix'
+                           else 'section'),
+                          '_',
+                          common:section-get-number(.))"/>
+    </template>
+
+    <template match="doc:ruleSection" mode="get-id">
+      <variable name="rule" as="element(doc:rule)" select="exactly-one(doc:rule)"/>
+      <apply-templates select="$rule" mode="get-id"/>
+    </template>
+
+    <template match="doc:figure" mode="get-id">
+      <value-of select="concat('figure_', common:item-get-number(.))"/>
+    </template>
+
+    <template match="doc:rule" mode="get-id">
+      <value-of select="concat('rule_', common:item-get-number(.))"/>
+    </template>
+
+    <template match="doc:table" mode="get-id">
+      <value-of select="concat('table_', common:item-get-number(.))"/>
+    </template>
+
+    <template match="doc:principle" mode="get-id">
+      <value-of select="concat('principle_', common:principle-get-number(.))"/>
+    </template>
+
+    <template match="doc:definition" mode="get-id">
+      <value-of select="concat('definition_', 
+                               replace(replace(normalize-space(@term), ' ', '_'),
+                                       '[^-_A-Za-z0-9\.]', ''))"/>
+    </template>
+
+    <template match="doc:termDef" mode="get-id">
+      <value-of select="concat('definition_', 
+                               replace(replace(normalize-space(.),
+                                               ' ', '_'),
+                                       '[^-_A-Za-z0-9\.]', ''))"/>
+    </template>
+
+    <template match="doc:conformance-target" mode="get-id">
+      <value-of select="concat('conformance_target_', @id)"/>
+    </template>
+
+  </xe:mode>
+
   <function name="common:get-top-section" as="element(doc:section)">
     <param name="context" as="node()"/>
     <sequence select="$context/ancestor-or-self::doc:section[empty(ancestor::doc:section)]"/>

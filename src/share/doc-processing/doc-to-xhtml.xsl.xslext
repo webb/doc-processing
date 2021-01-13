@@ -58,7 +58,7 @@
   <template match="doc:subsection">
     <h:div class="section">
       <h:div class="heading">
-        <h:a name="{this:get-id(.)}"/>
+        <h:a name="{common:get-id(.)}"/>
         <apply-templates select="doc:title/node()" mode="text"/>
       </h:div>
       <apply-templates/>
@@ -143,7 +143,7 @@
     <h:div class="table">
       <if test="exists(doc:title)">
         <h:div class="caption">
-          <h:a name="{this:get-id(.)}"/>
+          <h:a name="{common:get-id(.)}"/>
           <apply-templates select="." mode="get-label"/>
           <text>: </text>
           <apply-templates select="." mode="get-title"/>
@@ -190,7 +190,7 @@
         <if test="exists(@id)">
           <h:a name="{@id}"/>
         </if>
-        <h:a name="{this:get-id(.)}"/>
+        <h:a name="{common:get-id(.)}"/>
         <apply-templates select="." mode="get-label"/>
         <text>. </text>
         <apply-templates select="." mode="get-title"/>
@@ -209,7 +209,7 @@
         <if test="exists($rule/@id)">
           <h:a name="{$rule/@id}"/>
         </if>
-        <h:a name="{this:get-id(.)}"/>
+        <h:a name="{common:get-id(.)}"/>
         <apply-templates select="." mode="get-label"/>
         <text>. </text>
         <apply-templates select="." mode="get-title"/>
@@ -245,7 +245,7 @@
             <if test="position() &gt; 1">
               <text>, </text>
             </if>
-            <h:a href="#{this:get-id(.)}">
+            <h:a href="#{common:get-id(.)}">
               <text>Section </text>
               <apply-templates select="ancestor-or-self::doc:section[1]" mode="get-label"/>
               <if test="self::doc:definition"> (definition)</if>
@@ -263,7 +263,7 @@
         <variable name="term" as="xs:string"
                   select="normalize-space(if (exists(@term)) then @term else .)"/>
         <h:li>
-          <h:a href="#{this:get-id(.)}">
+          <h:a href="#{common:get-id(.)}">
             <value-of select="$term"/>
           </h:a>: <apply-templates select="ancestor::doc:section[1]" mode="get-reference"/>
         </h:li>
@@ -287,7 +287,7 @@
     <h:ul>
       <for-each select="//doc:table[exists(doc:title)]">
         <h:li>
-          <h:a href="#{this:get-id(.)}">
+          <h:a href="#{common:get-id(.)}">
             <apply-templates select="." mode="get-label"/>
             <text>: </text>
             <apply-templates select="." mode="get-title"/>
@@ -301,7 +301,7 @@
     <h:ul>
       <for-each select="//doc:figure">
         <h:li>
-          <h:a href="#{this:get-id(.)}">
+          <h:a href="#{common:get-id(.)}">
             <apply-templates select="." mode="get-label"/>
             <text>: </text>
             <apply-templates select="." mode="get-title"/>
@@ -339,7 +339,7 @@
   <template match="doc:bogusDefinition | doc:definition">
     <h:div class="box">
       <h:div class="normativeHead">
-        <h:a name="{this:get-id(.)}"/>
+        <h:a name="{common:get-id(.)}"/>
         <text>[Definition: </text>
         <choose>
           <when test="self::doc:definition">
@@ -375,7 +375,7 @@
   <template match="doc:principle">
     <h:div class="box">
       <h:div class="normativeHead">
-        <h:a name="{this:get-id(.)}"/>
+        <h:a name="{common:get-id(.)}"/>
         <text>[</text>
         <apply-templates select="." mode="get-label"/>
         <text>]</text>
@@ -414,7 +414,7 @@
           <if test="exists(@id)">
             <h:a name="{@id}"/>
           </if>
-          <h:a name="{this:get-id(.)}"/>
+          <h:a name="{common:get-id(.)}"/>
         </if>
         <text>[</text>
         <apply-templates select="." mode="get-label"/>
@@ -445,7 +445,7 @@
   <template match="doc:figure">
     <h:div class="figure">
       <h:div class="caption">
-        <h:a name="{this:get-id(.)}"/>
+        <h:a name="{common:get-id(.)}"/>
         <apply-templates select="." mode="get-label"/>
         <text>: </text>
         <apply-templates select="." mode="get-title"/>
@@ -458,7 +458,7 @@
 
   <template match="doc:reference">
     <h:p class="hang">
-      <h:a name="{this:get-id(.)}"/>
+      <h:a name="{common:get-id(.)}"/>
       <h:span class="ref">
         <apply-templates select="." mode="get-label"/>
       </h:span>
@@ -492,7 +492,7 @@
       <if test="exists(@from)">
         <h:a href="{@from}" target="_blank" title="{@from}">[from]</h:a>
       </if>
-      <h:a name="{this:get-id(.)}" href="#{this:get-id(.)}" title="{if (exists(@note)) then @note else .}">
+      <h:a name="{common:get-id(.)}" href="#{common:get-id(.)}" title="{if (exists(@note)) then @note else .}">
         <apply-templates mode="text"/>
       </h:a>
     </h:span>
@@ -508,7 +508,7 @@
 
     <template match="doc:section" mode="gen-table-of-contents">
       <h:li>
-        <h:a href="#{this:get-id(.)}">
+        <h:a href="#{common:get-id(.)}">
           <apply-templates select="." mode="get-label"/>
           <text>. </text>
           <apply-templates select="." mode="get-title"/>
@@ -535,7 +535,7 @@
 
     <template match="doc:figure" mode="get-reference">
       <param name="source" as="element()?" select="()"/>
-      <h:a href="#{this:get-id(.)}">
+      <h:a href="#{common:get-id(.)}">
         <apply-templates select="." mode="get-label"/>
         <text>, </text>
         <h:em>
@@ -549,14 +549,14 @@
 
     <template match="doc:reference" mode="get-reference">
       <param name="source" as="element()?" select="()"/>
-      <h:a href="#{this:get-id(.)}" class="ref">
+      <h:a href="#{common:get-id(.)}" class="ref">
         <apply-templates select="." mode="get-label"/>
       </h:a>
     </template>
 
     <template match="doc:section" mode="get-reference">
       <param name="source" as="element()?" select="()"/>
-      <h:a href="#{this:get-id(.)}">
+      <h:a href="#{common:get-id(.)}">
         <if test="not(common:section-is-appendix(.))">
           <text>Section </text>
         </if>
@@ -605,7 +605,7 @@
     <template match="doc:ruleSection" mode="get-reference">
       <param name="source" as="element()?" select="()"/>
       <variable name="rule" as="element(doc:rule)" select="exactly-one(doc:rule)"/>
-      <h:a href="#{this:get-id(.)}">
+      <h:a href="#{common:get-id(.)}">
         <apply-templates select="." mode="get-label"/>
         <text>, </text>
         <h:em>
@@ -620,7 +620,7 @@
 
     <template match="doc:conformance-target" mode="get-reference">
       <param name="source" as="element()?" select="()"/>
-      <h:a href="#{this:get-id(.)}">
+      <h:a href="#{common:get-id(.)}">
         <apply-templates select="node()" mode="text"/>
       </h:a>
     </template>
@@ -635,7 +635,7 @@
           </apply-templates>
         </when>
         <otherwise>
-          <h:a href="#{this:get-id(.)}">
+          <h:a href="#{common:get-id(.)}">
             <apply-templates select="." mode="get-label"/>
             <sequence select="this:get-rule-applicability(., false())"/>
             <if test="exists($source) and empty($source/ancestor::doc:rule)">
@@ -648,7 +648,7 @@
 
     <template match="doc:principle" mode="get-reference">
       <param name="source" as="element()?" select="()"/>
-      <h:a href="#{this:get-id(.)}">
+      <h:a href="#{common:get-id(.)}">
         <h:strong>
           <text>[</text>
           <apply-templates select="." mode="get-label"/>
@@ -662,7 +662,7 @@
 
     <template match="doc:definition" mode="get-reference">
       <param name="source" as="element()?" select="()"/>
-      <h:a href="#{this:get-id(.)}">
+      <h:a href="#{common:get-id(.)}">
         <h:strong>
           <text>[</text>
           <apply-templates select="." mode="get-label"/>
@@ -673,7 +673,7 @@
 
     <template match="doc:table" mode="get-reference">
       <param name="source" as="element()?" select="()"/>
-      <h:a href="#{this:get-id(.)}">
+      <h:a href="#{common:get-id(.)}">
         <apply-templates select="." mode="get-label"/>
         <text>, </text>
         <h:em>
@@ -717,8 +717,8 @@
                           //doc:definition[normalize-space(@term) = $term]
                           | //doc:termDef[normalize-space(.) = $term])"/>
       <variable name="id" as="xs:string" 
-                select="this:get-id($definition)"/>
-      <h:a name="{this:get-id(.)}"/>
+                select="common:get-id($definition)"/>
+      <h:a name="{common:get-id(.)}"/>
       <h:a href="#{$id}">
         <h:span class="termRef">
           <apply-templates mode="text"/>
@@ -727,14 +727,14 @@
     </template>
 
     <template match="doc:termDef" mode="text">
-      <h:a name="{this:get-id(.)}"/>
+      <h:a name="{common:get-id(.)}"/>
       <h:dfn>
         <apply-templates mode="text"/>
       </h:dfn>
     </template>
       
     <template match="doc:conformance-target" mode="text">
-      <h:a name="{this:get-id(.)}"/>
+      <h:a name="{common:get-id(.)}"/>
       <apply-templates mode="text"/>
     </template>
 
@@ -745,7 +745,7 @@
     </template>
 
     <template match="doc:xe" mode="text">
-      <h:a name="{this:get-id(.)}">
+      <h:a name="{common:get-id(.)}">
         <apply-templates mode="text"/>
       </h:a>
     </template>
@@ -829,69 +829,6 @@
       <h:a target="_blank" href="{@href}">
         <apply-templates mode="text"/>
       </h:a>
-    </template>
-
-  </xe:mode>
-
-  <function name="this:get-id" as="xs:string">
-    <param name="node" as="node()?"/>
-    <value-of>
-      <apply-templates select="$node" mode="get-id"/>
-    </value-of>
-  </function>
-
-  <xe:mode mode="get-id">
-    <template match="*" priority="-1" mode="get-id">
-      <value-of select="if (exists(@id))
-                          then @id
-                          else generate-id(.)"/>
-    </template>
-
-    <template match="doc:section" mode="get-id">
-      <value-of select="concat(
-                          (if (exists(ancestor-or-self::doc:section[common:section-is-appendix(.)]))
-                           then 'appendix'
-                           else 'section'),
-                          '_',
-                          common:section-get-number(.))"/>
-    </template>
-
-    <template match="doc:ruleSection" mode="get-id">
-      <variable name="rule" as="element(doc:rule)" select="exactly-one(doc:rule)"/>
-      <apply-templates select="$rule" mode="get-id"/>
-    </template>
-
-    <template match="doc:figure" mode="get-id">
-      <value-of select="concat('figure_', common:item-get-number(.))"/>
-    </template>
-
-    <template match="doc:rule" mode="get-id">
-      <value-of select="concat('rule_', common:item-get-number(.))"/>
-    </template>
-
-    <template match="doc:table" mode="get-id">
-      <value-of select="concat('table_', common:item-get-number(.))"/>
-    </template>
-
-    <template match="doc:principle" mode="get-id">
-      <value-of select="concat('principle_', common:principle-get-number(.))"/>
-    </template>
-
-    <template match="doc:definition" mode="get-id">
-      <value-of select="concat('definition_', 
-                               replace(replace(normalize-space(@term), ' ', '_'),
-                                       '[^-_A-Za-z0-9\.]', ''))"/>
-    </template>
-
-    <template match="doc:termDef" mode="get-id">
-      <value-of select="concat('definition_', 
-                               replace(replace(normalize-space(.),
-                                               ' ', '_'),
-                                       '[^-_A-Za-z0-9\.]', ''))"/>
-    </template>
-
-    <template match="doc:conformance-target" mode="get-id">
-      <value-of select="concat('conformance_target_', @id)"/>
     </template>
 
   </xe:mode>
